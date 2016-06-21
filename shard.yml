@@ -1,0 +1,17 @@
+name: ramlrenderer
+version: 0.0.1
+
+
+dependencies:
+  commander:
+    github: mrrooijen/commander
+    version: ~> 0.3.3
+  slang:
+    github: jeromegn/slang
+    branch: master
+  kilt:
+    github: jeromegn/kilt
+  minitest:
+    github: ysbaddaden/minitest.cr
+
+

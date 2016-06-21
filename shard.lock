@@ -1,0 +1,18 @@
+version: 1.0
+shards:
+  commander:
+    github: mrrooijen/commander
+    version: 0.3.3
+
+  kilt:
+    github: jeromegn/kilt
+    version: 0.3.3
+
+  minitest:
+    github: ysbaddaden/minitest.cr
+    version: 0.3.4
+
+  slang:
+    github: jeromegn/slang
+    commit: 53f569bc27893334ec3a3e4a75d1a6ed9a1ff711
+
