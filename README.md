@@ -3,6 +3,12 @@
 
 ### Usage
 
+#### Install
+
+    $ crystal dep
+    
+#### Run
+
     $ crystal compile ramlrenderer.cr
     $ ./ramlrenderer -i api.raml -o docs.html
     
