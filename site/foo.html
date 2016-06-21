@@ -1,0 +1,183 @@
+<html>
+  <head>
+    <title>API Doc</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+    <link rel="stylesheet" href="api.css">
+    <script src="https://code.jquery.com/jquery-2.2.4.min.js" type="text/javascript"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" type="text/javascript"></script>
+    <script src="api.js" type="text/javascript"></script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="page-header">
+            <h1>
+              API Doc
+              <small>
+                version
+                v1
+              </small>
+            </h1>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-3">
+          <ul>
+            <li class="parent">
+              <a href="#_prive" data-toggle="collapse">
+                /prive
+              </a>
+              <ul class="collapse in" id="_prive">
+                <li class="endpoint">
+                  <a class="endpoint" onclick="toggleNav(this, '_prive_articles')">
+                    /prive/articles
+                    <span class="pull-right">
+                      <span class="badge">get</span>
+                      <span class="badge">post</span>
+                    </span>
+                  </a>
+                </li>
+                <li class="endpoint">
+                  <a class="endpoint" onclick="toggleNav(this, '_prive_articles__articleid_')">
+                    /prive/articles/{articleId}
+                    <span class="pull-right">
+                      <span class="badge">get</span>
+                    </span>
+                  </a>
+                </li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+        <div class="col-md-9">
+          <div class="resource" id="_prive_articles" style="display: none;">
+            <div class="requests">
+              <div class="request">
+                <h4>
+                  GET /prive/articles
+                </h4>
+                <p>Retrieve a (filtered) list of articles</p>
+                <ul class="nav nav-tabs" role="tablist">
+                  <li role="presentation">
+                    <a href="#_prive_articles_get_request" aria-controls="_prive_articles_get_request" role="tab" data-toggle="tab">Request</a>
+                  </li>
+                  <li role="presentation">
+                    <a href="#_prive_articles_get_responses" aria-controls="_prive_articles_get_responses" role="tab" data-toggle="tab">Responses</a>
+                  </li>
+                </ul>
+                <div class="clearfix"></div>
+                <div class="tab-content">
+                  <div class="tab-pane" role="tabpanel" id="_prive_articles_get_request">
+                    <h5>Query Parameters</h5>
+                    <ul></ul>
+                    <li>
+                      <span class="name">since</span>
+                      <span class="type">datetime</span>
+                    </li>
+                  </div>
+                  <div class="tab-pane" role="tabpanel" id="_prive_articles_get_responses">
+                    <h5>200</h5>
+                    <p></p>
+                    <ul>
+                      <li>
+                        application/json
+                        <ul>
+                          <li>
+                            <span class="name">type</span>
+                            <span class="type">prive.Articles[]</span>
+                          </li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              <div class="request">
+                <h4>
+                  POST /prive/articles
+                </h4>
+                <p>Create a new article</p>
+                <ul class="nav nav-tabs" role="tablist">
+                  <li role="presentation">
+                    <a href="#_prive_articles_post_request" aria-controls="_prive_articles_post_request" role="tab" data-toggle="tab">Request</a>
+                  </li>
+                  <li role="presentation">
+                    <a href="#_prive_articles_post_responses" aria-controls="_prive_articles_post_responses" role="tab" data-toggle="tab">Responses</a>
+                  </li>
+                </ul>
+                <div class="clearfix"></div>
+                <div class="tab-content">
+                  <div class="tab-pane" role="tabpanel" id="_prive_articles_post_request">
+                    <h5>Query Parameters</h5>
+                    <ul></ul>
+                    <li>
+                      <span class="name">foo</span>
+                      <span class="type">string</span>
+                    </li>
+                  </div>
+                  <div class="tab-pane" role="tabpanel" id="_prive_articles_post_responses">
+                    <h5>201</h5>
+                    <p></p>
+                    <ul>
+                      <li>
+                        application/json
+                        <ul>
+                          <li>
+                            <span class="name">type</span>
+                            <span class="type">prive.Article</span>
+                          </li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="resource" id="_prive_articles__articleid_" style="display: none;">
+            <div class="requests">
+              <div class="request">
+                <h4>
+                  GET /prive/articles/{articleId}
+                </h4>
+                <p>Retrieve a single article</p>
+                <ul class="nav nav-tabs" role="tablist">
+                  <li role="presentation">
+                    <a href="#_prive_articles__articleid__get_request" aria-controls="_prive_articles__articleid__get_request" role="tab" data-toggle="tab">Request</a>
+                  </li>
+                  <li role="presentation">
+                    <a href="#_prive_articles__articleid__get_responses" aria-controls="_prive_articles__articleid__get_responses" role="tab" data-toggle="tab">Responses</a>
+                  </li>
+                </ul>
+                <div class="clearfix"></div>
+                <div class="tab-content">
+                  <div class="tab-pane" role="tabpanel" id="_prive_articles__articleid__get_request">
+                    <h5>Query Parameters</h5>
+                    <ul></ul>
+                  </div>
+                  <div class="tab-pane" role="tabpanel" id="_prive_articles__articleid__get_responses">
+                    <h5>200</h5>
+                    <p></p>
+                    <ul>
+                      <li>
+                        application/json
+                        <ul>
+                          <li>
+                            <span class="name">type</span>
+                            <span class="type">prive.Article</span>
+                          </li>
+                        </ul>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
