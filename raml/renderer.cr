@@ -13,8 +13,21 @@ module RAML
     end
     
     def render
-      Kilt.render "./templates/api.slang"
-    end      
+      Kilt.render "./template/api.slang"
+    end
+    
+    def write(path)
+      html = render
+      dir = File.dirname(path)
+      Dir.mkdir_p(dir)
+      File.write path, html
+      copy_file dir, "js"
+      copy_file dir, "css"
+    end
+    
+    def copy_file(dir, extension)
+      File.write File.join(dir, "api.#{extension}"), File.read(File.expand_path("../../template/api.#{extension}", __FILE__))
+    end
     
     def parse_nav_tree(url : String, tree : Hash, root = @nav_tree)
       tree.each do |key, value|

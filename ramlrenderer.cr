@@ -32,11 +32,11 @@ cli = Commander::Command.new do |cmd|
     
     output = arguments.first? && "" || options.string["output"]
     parser = RAML::Parser.new(input)
-    rendered = RAML::Renderer.new(parser.api).render
+    renderer = RAML::Renderer.new(parser.api)
     if output == ""
-      puts rendered
+      puts renderer.render
     else
-      File.write(output, rendered)
+      renderer.write output
       puts "HTML written to #{output}"
     end
   end

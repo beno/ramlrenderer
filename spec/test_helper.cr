@@ -1,4 +1,5 @@
 require "minitest/autorun"
+require "../raml/parser"
 
 module TestHelper
     
