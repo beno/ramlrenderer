@@ -24,9 +24,28 @@ module RAML
     DIRECTIVES = %w{ types traits resourceTypes annotationTypes securitySchemes \
                      title description version baseUri baseUriParameters mediaType protocols }
     
-    def load_directives(spec, namespace)
+    def load_include(spec, dir)
+      case spec
+      when String
+        if spec.to_s.match(/.raml$/)
+          YAML.parse(File.read(File.join(dir, spec.to_s))).raw
+        else
+          spec as YAML::Type
+        end
+      when Hash(YAML::Type, YAML::Type)
+        (spec as Hash).each do |k, v|
+          spec[k as YAML::Type] = load_include(v, dir) as YAML::Type
+        end
+        spec as YAML::Type
+      else
+        spec as YAML::Type
+      end
+    end
+    
+    def load_directives(spec, namespace, dir)
       DIRECTIVES.each do |directive|
-        @api.add_directive directive, spec, namespace
+        (spec.raw as Hash)[directive as YAML::Type] = load_include((spec.raw as Hash)[directive]?, dir) as YAML::Type
+        @api.add_directive directive, spec.raw, namespace
       end
     end
     
@@ -46,7 +65,7 @@ module RAML
         dir = File.dirname path
         spec = YAML.parse File.read(path)
         load_libraries(spec, dir)
-        load_directives(spec, namespace)
+        load_directives(spec, namespace, dir)
         load_resources(spec)
       else
         puts "File not found: #{path}"

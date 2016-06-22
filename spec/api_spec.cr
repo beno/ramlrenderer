@@ -9,7 +9,7 @@ class ApiTest < Minitest::Test
   end
   
   def test_version
-    assert_equal "v1", (@api as RAML::Api).version
+    assert_equal "v1", (@api as RAML::Api).spec["version"]
   end
   
   def test_base_uri

@@ -4,6 +4,19 @@ title: Test API
 baseUri: https://api.example.com/{version}
 version: v1
 
+uses:
+  common: types/main/article.raml
+
+resourceTypes:
+  collectionType: resourceTypes/collectionType.raml
+
+traits:
+  searchable: traits/search.raml
+
+
 types:
   Article:
     title: string
+
+/things:
+  type: collectionType
