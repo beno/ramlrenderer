@@ -21,18 +21,27 @@ html
         .col-md-3
           ul
             - nav_tree.each do |url, value|
-              li class=nav_class(value)
-                a href="##{html_id(url)}" data-toggle="collapse"
-                  ==url
-                - if value.is_a? Hash
-                  ul.collapse.in id=html_id(url)
-                    - value.each do |url, resource|
-                      li class=nav_class(resource)
-                        a.endpoint onclick="toggleNav(this, '#{html_id((resource as RAML::Resource).url)}')"
-                          ==url
-                          span.pull-right
-                            - (resource as RAML::Resource).requests.each do |rq|
-                              span.badge =rq.verb
+              - nav_cl = nav_class(value)
+              - if  nav_cl == "endpoint"
+                li class=nav_class(value)
+                  a.endpoint onclick="toggleNav(this, '#{html_id((value as RAML::Resource).url)}')"
+                    ==url
+                    span.pull-right
+                      - (value as RAML::Resource).requests.each do |rq|
+                        span.badge =rq.verb
+              - if  nav_cl == "parent"
+                li class=nav_class(value)
+                  a href="##{html_id(url)}" data-toggle="collapse"
+                    ==url
+                  - if value.is_a? Hash
+                    ul.collapse.in id=html_id(url)
+                      - value.each do |url, resource|
+                        li class=nav_class(resource)
+                          a.endpoint onclick="toggleNav(this, '#{html_id((resource as RAML::Resource).url)}')"
+                            ==url
+                            span.pull-right
+                              - (resource as RAML::Resource).requests.each do |rq|
+                                span.badge =rq.verb
 
         .col-md-9
           - resources.each do |r|
