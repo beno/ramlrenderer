@@ -21,20 +21,14 @@ module RAML
       end
     end
     
-  
+    DIRECTIVES = %w{ types traits resourceTypes annotationTypes securitySchemes \
+                     title description version baseUri baseUriParameters mediaType protocols }
+    
     def load_directives(spec, namespace)
-      ["types", "traits", "resourceTypes", "annotationTypes", "securitySchemes"].each do |directive|
+      DIRECTIVES.each do |directive|
         @api.add_directive directive, spec, namespace
       end
     end
-    
-    
-    def load_settings(spec)
-      ["title", "description", "version", "baseUri", "baseUriParameters", "mediaType", "protocols"].each do |directive|
-        @api.add_directive directive, spec
-      end
-    end
-
     
     def load_resources(spec, tree = @api.resources, url = "")
       spec.each do |key, value|
@@ -52,7 +46,6 @@ module RAML
         dir = File.dirname path
         spec = YAML.parse File.read(path)
         load_libraries(spec, dir)
-        load_settings(spec)
         load_directives(spec, namespace)
         load_resources(spec)
       else

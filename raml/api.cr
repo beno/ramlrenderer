@@ -24,7 +24,7 @@ module RAML
       
     alias TreeType = String | RAML::Resource | Hash(String, TreeType)
 
-    property :resources
+    getter :resources, :spec
 
     def initialize
       @spec = Hash(YAML::Type, YAML::Type).new
@@ -36,8 +36,12 @@ module RAML
     end
     
     def base_uri
-        interpolate @spec["baseUri"]? as String
-      end
+      interpolate @spec["baseUri"]? as String
+    end
+    
+    def types
+      @spec["types"] as Hash(YAML::Type, YAML::Type)
+    end
 
     def empty_hash
       Hash(YAML::Type, YAML::Type).new
@@ -72,7 +76,7 @@ module RAML
         case val.raw.class
         when Hash.class
           @spec[directive] = empty_hash unless @spec[directive]? 
-          (@spec[directive] as Hash).merge! add_namespace(spec, namespace)
+          (@spec[directive] as Hash).merge! add_namespace(val, namespace)
         when Array.class
           @spec[directive] = empty_array unless @spec[directive]? 
           (@spec[directive] as Array(YAML::Type)).concat((val.raw as Array(YAML::Type)))
