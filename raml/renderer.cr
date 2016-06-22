@@ -16,6 +16,10 @@ module RAML
       Kilt.render "./template/api.slang"
     end
     
+    def api(name)
+      @api.spec[name]?
+    end
+    
     def write(path)
       html = render
       dir = File.dirname(path)

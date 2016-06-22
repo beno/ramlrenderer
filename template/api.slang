@@ -1,6 +1,6 @@
 html
   head
-    title API Doc
+    title ==api("title")
     link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css"
     link rel="stylesheet" href="api.css"
     script src="https://code.jquery.com/jquery-2.2.4.min.js" type="text/javascript"
@@ -12,10 +12,11 @@ html
         .col-md-12
           .page-header
             h1
-              | API Doc
+              ==api("title")
               small
                 | version
-                ==api.version
+                ==api("title")
+            p ==api("description")
       .row
         .col-md-3
           ul

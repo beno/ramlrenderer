@@ -10,16 +10,17 @@ span.method {
 }
 
 ul {
-  padding-left: 4px;
+  padding-left: 10px;
   list-style: none;
-  &.methods {
-    display:inline-block;
-  }
 }
 
 li.parent > a {
   color: gray;
   font-size: 20px !important;
+}
+
+li.endpoint {
+  height: 22px;
 }
 
 a.selected {
@@ -30,3 +31,8 @@ a.selected {
   min-height: 100px;
 }
 
+span.badge {
+  border-radius: 3px;
+  text-transform: uppercase;
+  background-color: #c4c4c4;
+}
