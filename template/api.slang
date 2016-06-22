@@ -15,7 +15,7 @@ html
               ==api("title")
               small
                 | version
-                ==api("title")
+                ==api("version")
             p ==api("description")
       .row
         .col-md-3
