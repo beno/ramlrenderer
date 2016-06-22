@@ -20,31 +20,27 @@ module RAML
         end
       end
     end
-    
-    DIRECTIVES = %w{ types traits resourceTypes annotationTypes securitySchemes \
-                     title description version baseUri baseUriParameters mediaType protocols }
-    
-    def load_include(spec, dir)
+        
+    def load_includes(spec, dir)
       case spec
       when String
-        if spec.to_s.match(/.raml$/)
-          YAML.parse(File.read(File.join(dir, spec.to_s))).raw
-        else
-          spec as YAML::Type
-        end
-      when Hash(YAML::Type, YAML::Type)
+        spec.to_s.match(/.raml$/) ? YAML.parse(File.read(File.join(dir, spec.to_s))).raw : spec
+      when Hash
         (spec as Hash).each do |k, v|
-          spec[k as YAML::Type] = load_include(v, dir) as YAML::Type
+          spec[k as YAML::Type] = load_includes(v, dir)
         end
-        spec as YAML::Type
       else
-        spec as YAML::Type
-      end
+        spec 
+      end as YAML::Type
     end
+    
+    DIRECTIVES = %w{ types traits resourceTypes annotationTypes securitySchemes \
+      title description version baseUri baseUriParameters mediaType protocols }
+
     
     def load_directives(spec, namespace, dir)
       DIRECTIVES.each do |directive|
-        (spec.raw as Hash)[directive as YAML::Type] = load_include((spec.raw as Hash)[directive]?, dir) as YAML::Type
+        (spec.raw as Hash)[directive as YAML::Type] = load_includes((spec.raw as Hash)[directive]?, dir) as YAML::Type
         @api.add_directive directive, spec.raw, namespace
       end
     end
