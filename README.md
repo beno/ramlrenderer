@@ -30,6 +30,7 @@ Due to Crystal's macro implementation the template name has to be hard coded (./
 The plan is to grow this into a fully compliant RAML 1.0 parser. Next steps:
 
 - merge includes (done)
-- merge types, resourceTypes, traits into resources
+- merge resourceTypes & traits into resources (done)
+- merge data types
 - handle <\<variables>> in resourceTypes, traits, etc
 - handle the various specification styles (responses/request) RAML allows
