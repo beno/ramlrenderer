@@ -36,13 +36,13 @@ html
 
         .col-md-9
           - resources.each do |r|
-            .resource id=html_id(r.url) style="display: none;"
+            .resource.collapse id=html_id(r.url)
               .requests
                 - r.requests.each do |rq|
                   .request
                     h4
                       =="#{rq.verb.upcase} #{r.url}"
-                    p ==rq.description
+                    p ==rq.spec("description")
                     ul.nav.nav-tabs role="tablist"
                       - id = "#{html_id(r.url)}_#{rq.verb}"
                       li role="presentation"
@@ -61,7 +61,7 @@ html
                       .tab-pane role="tabpanel" id="#{id}_responses"
                         - rq.responses.each do |resp|
                           h5 ==resp.code
-                          p ==resp.description
+                          p ==resp.spec("description")
                           ul 
                             - resp.body.each do |mime, body|
                               li

@@ -12,7 +12,7 @@ class ParserTest < Minitest::Test
   end
   
   def test_title_directive
-    assert ((@api as RAML::Api).spec as Hash)["title"] = "Test API"
+    assert_equal "Test API", (@api as RAML::Api).spec("title")
   end
 
   def test_resource
@@ -20,18 +20,17 @@ class ParserTest < Minitest::Test
   end
   
   def test_resource_type_include
-    assert ((((@api as RAML::Api).spec as Hash)["resourceTypes"] as Hash)["collectionType"] as Hash).has_key? "description"
+    assert (((@api as RAML::Api).spec("resourceTypes") as Hash)["collectionType"] as Hash).has_key? "description"
   end
   
   def test_traits_include
-    assert ((((@api as RAML::Api).spec as Hash)["traits"] as Hash)["searchable"] as Hash).has_key? "queryParameters"
+    assert (((@api as RAML::Api).spec("traits") as Hash)["searchable"] as Hash).has_key? "queryParameters"
   end
 
   
   def test_namespaced_library
-      assert (((@api as RAML::Api).spec as Hash)["types"] as Hash).has_key? "Article"
-      assert (((@api as RAML::Api).spec as Hash)["types"] as Hash).has_key? "common.Article"
+    assert (@api as RAML::Api).types.has_key? "Article"
+    assert (@api as RAML::Api).types.has_key? "common.Article"
   end
-
 
 end

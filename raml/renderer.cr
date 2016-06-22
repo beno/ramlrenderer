@@ -17,7 +17,7 @@ module RAML
     end
     
     def api(name)
-      @api.spec[name]?
+      @api.spec(name)
     end
     
     def write(path)

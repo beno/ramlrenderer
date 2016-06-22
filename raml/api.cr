@@ -4,19 +4,39 @@ module RAML
   
   module CommonMethods
     
-    def description
-      @spec["description"]?
-    end
-    
     def interpolate(string : String)
       string.scan(/\{([^\}]*)\}/).each do |match|
         if val = @spec[match[1]]?
-          string = string.gsub match[0], val
+          string = string.sub match[0], val
         end
       end
       string
     end
     
+    def spec(name)
+      if val = @spec[name]?
+        case val
+        when String
+          interpolate val
+        else
+          val
+        end
+      end
+    end
+        
+    def merge_traits(source_spec, target_spec, api)
+      if traits = (source_spec as Hash).delete("is")
+        (traits as Array).each do |name|
+          if trait = (api.spec("traits") as Hash)[name]? as Hash 
+            trait.each do |key, val|
+              (target_spec as Hash)[key] = (target_spec as Hash)[key]? ? (val as Hash).merge((target_spec as Hash)[key] as Hash) : val
+            end
+          end
+        end
+      end
+      target_spec as Hash(YAML::Type, YAML::Type)
+    end
+
   end
   
   class Api
@@ -24,15 +44,11 @@ module RAML
       
     alias TreeType = String | RAML::Resource | Hash(String, TreeType)
 
-    getter :resources, :spec
+    getter :resources
 
     def initialize
       @spec = Hash(YAML::Type, YAML::Type).new
       @resources = Hash(String, TreeType).new
-    end
-        
-    def base_uri
-      interpolate @spec["baseUri"]? as String
     end
     
     def types
@@ -60,9 +76,9 @@ module RAML
       end
       traversed
     end
-
+    
     def add_resource(url, tree, spec)
-      resource = RAML::Resource.new(url, spec)
+      resource = RAML::Resource.new(self, url, spec)
       tree["endpoint"] = resource if resource.endpoint?
       resource
     end
@@ -88,21 +104,32 @@ module RAML
     include CommonMethods
 
     getter :requests, :url
+    
+    VERBS = %w{ get post put patch delete options head }
 
-    def initialize(@url : String, @spec :  Hash(YAML::Type, YAML::Type))
-      if resourceType = @spec.delete("type")
-        merge_resource_type(resourceType)
-      end
+    def initialize(api : RAML::Api, @url : String, spec)
+      @spec = merge_resource_type(spec, api) as Hash(YAML::Type, YAML::Type)
       @requests = Array(RAML::Request).new
-      @spec.each do |key, value|
-        @requests << RAML::Request.new(key as String, value as Hash(YAML::Type, YAML::Type)) if key.to_s[0] != '/'
+      @spec.each do |key, spec|
+        @requests << RAML::Request.new(api, key as String, merge_traits(@spec, spec, api)) if VERBS.includes?(key.to_s.downcase)
       end
     end
     
-    def merge_resource_type(resourceType)
-      
+    def merge_resource_type(spec, api)
+      if name = (spec as Hash).delete("type")
+        if resource_type = (api.spec("resourceTypes") as Hash)[name]?
+          VERBS.each do |verb|
+            if val = (resource_type as Hash).delete(verb)
+              spec[verb] = spec[verb]? ? (val as Hash).merge(spec[verb] as Hash) : val
+            end
+          end
+          spec = (resource_type as Hash).merge(spec as Hash) 
+        end
+      end
+      spec
     end
 
+    
     def endpoint?
       @requests.any?
     end
@@ -114,9 +141,10 @@ module RAML
   
     getter :verb, :request, :responses
     
-    def initialize(@verb : String, @spec : Hash(YAML::Type, YAML::Type))
+    def initialize(api : RAML::Api, @verb : String, spec : Hash(YAML::Type, YAML::Type))
+      @spec = merge_traits(spec, spec, api) as Hash(YAML::Type, YAML::Type)
       @responses = Array(RAML::Response).new
-      if resp = spec.delete("responses") as Hash
+      if resp = @spec.delete("responses") as Hash
         resp.each do |code, spec|
           @responses << RAML::Response.new(code.to_s, spec as Hash)
         end
