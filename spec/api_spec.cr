@@ -42,6 +42,10 @@ class ApiTest < Minitest::Test
     resource = (api.resources[api.resources.first_key] as Hash)["endpoint"] as RAML::Resource
     request = resource.requests.first
     response = request.responses.first
+    response.media_types.each do |name, media_type|
+      assert media_type.data_type
+      assert media_type.data_type.properties.has_key? "title"
+    end
   end
   
 

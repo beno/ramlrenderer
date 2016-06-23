@@ -69,6 +69,8 @@ module RAML
         when Array
           media_types.concat(types as Array(YAML::Type))
         end
+      else
+        media_types << "application/json"
       end
       media_types
     end
