@@ -38,5 +38,12 @@ class ApiTest < Minitest::Test
     assert (request.spec("queryParameters") as Hash).has_key? "query"
   end
   
+  def test_response_data_type
+    resource = (api.resources[api.resources.first_key] as Hash)["endpoint"] as RAML::Resource
+    request = resource.requests.first
+    response = request.responses.first
+    p response.spec("type")
+  end
+  
 
 end

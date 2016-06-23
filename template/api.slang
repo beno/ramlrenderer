@@ -72,14 +72,15 @@ html
                           h5 ==resp.code
                           p ==resp.spec("description")
                           ul 
-                            - resp.body.each do |mime, body|
+                            - resp.media_types.each do |mime, media_type|
                               li
-                                == mime
+                                h5 == mime
+                                h6 == media_type.data_type.name
                                 ul
-                                  - (body as Hash).each do |k, v|
-                                    li
-                                      span.name ==k
-                                      span.type ==v
+                                  - (media_type.data_type.spec("properties") as Hash).each do |k,v|
+                                    li =="#{k} (#{v})"
+                                
+                               
   
                           
 

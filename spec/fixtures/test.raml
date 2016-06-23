@@ -16,11 +16,14 @@ traits:
 
 types:
   Article:
-    title: string
+    type: common.Article
+    properties:
+      title: string
 
 /things:
   type: collectionType
   is: [ secured ]
   get:
     is: [ searchable ]
+    
 

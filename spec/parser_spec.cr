@@ -8,7 +8,7 @@ class ParserTest < Minitest::Test
   end
   
   def test_types_directive
-    assert (@api as RAML::Api).types.has_key? "Article"
+    assert ((@api as RAML::Api).spec("types") as Hash).has_key? "Article"
   end
   
   def test_title_directive
@@ -29,8 +29,8 @@ class ParserTest < Minitest::Test
 
   
   def test_namespaced_library
-    assert (@api as RAML::Api).types.has_key? "Article"
-    assert (@api as RAML::Api).types.has_key? "common.Article"
+    assert ((@api as RAML::Api).spec("types") as Hash).has_key? "Article"
+    assert ((@api as RAML::Api).spec("types") as Hash).has_key? "common.Article"
   end
 
 end

@@ -49,18 +49,35 @@ module RAML
     def initialize
       @spec = Hash(YAML::Type, YAML::Type).new
       @resources = Hash(String, TreeType).new
+      @data_types = Hash(String, RAML::DataType).new
     end
     
-    def types
-      @spec["types"] as Hash(YAML::Type, YAML::Type)
-    end
-
     def empty_hash
       Hash(YAML::Type, YAML::Type).new
     end
     
     def empty_array
       Array(YAML::Type).new
+    end
+
+    def default_media_types
+      media_types = Array(YAML::Type).new
+      if types = @spec["mediaType"]?
+        case types
+        when String
+          media_types << (types as String)
+        when Array
+          media_types.concat(types as Array(YAML::Type))
+        end
+      end
+      media_types
+    end
+    
+    def data_type(name)
+      if match = name.to_s.match /(.*)\[\]$/
+        name = match[1]
+      end
+      @data_types[name.to_s]?
     end
 
     def add_leaf(tree : Hash, name : String)
@@ -81,6 +98,15 @@ module RAML
       resource = RAML::Resource.new(self, url, spec)
       tree["endpoint"] = resource if resource.endpoint?
       resource
+    end
+    
+    def build_data_types
+      (@spec["types"] as Hash).each do |key, value|
+        @data_types[key.to_s] = RAML::DataType.new(key.to_s, value as Hash)
+      end
+      @data_types.each do |_, data_type|
+        data_type.resolve(self)
+      end
     end
 
     def add_directive(directive, spec, namespace = "")
@@ -146,7 +172,7 @@ module RAML
       @responses = Array(RAML::Response).new
       if resp = @spec.delete("responses") as Hash
         resp.each do |code, spec|
-          @responses << RAML::Response.new(code.to_s, spec as Hash)
+          @responses << RAML::Response.new(api, code.to_s, spec as Hash)
         end
       end
     end
@@ -163,14 +189,62 @@ module RAML
   class Response
     include CommonMethods
     
-    getter :code
+    getter :code, :media_types
     
-    def initialize(@code : String, @spec : Hash(YAML::Type, YAML::Type))
+    def initialize(api, @code : String, @spec : Hash(YAML::Type, YAML::Type))
+      @media_types = Hash(String, RAML::MediaType).new
+      case @spec["body"]?
+        when String
+          data_type = api.data_type(@spec["body"])
+          api.default_media_types.each do |media_type|
+            @media_types[media_type.to_s] = RAML::MediaType.new(media_type.to_s, data_type as RAML::DataType)
+          end
+        when Hash
+          (@spec["body"] as Hash).each do |media_type, spec|
+            data_type = case spec
+            when String
+              api.data_type(spec)
+            when Hash
+              spec["type"]? ? api.data_type(spec["type"]) : RAML::DataType.new("", spec)
+            end
+            @media_types[media_type.to_s] = RAML::MediaType.new(media_type.to_s, data_type as RAML::DataType)
+        end
+      end
     end
+  end
+  
+  class MediaType
+    include CommonMethods
+
     
-    def body
-      @spec["body"]? ? @spec["body"] as Hash(YAML::Type, YAML::Type) : Hash(YAML::Type, YAML::Type).new
+    getter :data_type
+    
+    def initialize(@media_type : String, @data_type : RAML::DataType)
     end
 
+  end
+    
+  class DataType
+    include CommonMethods
+
+    
+    property :spec, :name
+    
+    def initialize(@name : String, @spec : Hash(YAML::Type, YAML::Type) )
+    end
+    
+    def resolve(api)
+      if data_type = api.data_type(@spec.delete("type"))
+        inherit_from data_type.resolve(api)
+      end
+      self
+    end
+    
+    def inherit_from(data_type : DataType)
+      data_type.spec.each do |key, value|
+        @spec[key] = @spec[key]? ? (data_type.spec[key] as Hash).merge(@spec[key] as Hash) : data_type.spec[key]
+      end
+    end
+    
   end
 end

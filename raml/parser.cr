@@ -43,6 +43,7 @@ module RAML
         (spec.raw as Hash)[directive as YAML::Type] = load_includes((spec.raw as Hash)[directive]?, dir) as YAML::Type
         @api.add_directive directive, spec.raw, namespace
       end
+      @api.build_data_types
     end
     
     def load_resources(spec, tree = @api.resources, url = "")
