@@ -22,7 +22,7 @@ or (dev):
 
 This is only a partial implementation so far. More to come.
 
-Due to Crystal's macro implementation the template name has to be hard coded (./template/api.slang). So for different layouts, this file must be edited/replaced.
+Due to Crystal's macro implementation the template name has to be hard coded (./template/api.slang). So for different layouts, this file must be edited/replaced and the program must be recompiled.
 
 
 #### Roadmap
@@ -31,7 +31,8 @@ The plan is to grow this into a fully compliant RAML 1.0 parser. Next steps:
 
 - merge includes (done)
 - merge resourceTypes & traits into resources (done)
-- merge data types (first pass done)
-- handle <\<variables>> in resourceTypes, traits, etc
+- merge data types (done)
+- interpolate <\<variables>> in resourceTypes, traits, etc
 - handle the various specification styles (responses/request) RAML allows
+- handle examples
 - error handling

@@ -49,10 +49,14 @@ module RAML
     def load_resources(spec, tree = @api.resources, url = "")
       spec.each do |key, value|
         if key.to_s[0] == '/'
+          old_tree = tree
+          old_url = url
           url += key.to_s
           tree = @api.add_leaf tree, key.to_s
           @api.add_resource(url, tree, value.raw as Hash(YAML::Type, YAML::Type) )
           load_resources value, tree as Hash, url
+          tree = old_tree
+          url = old_url
         end
       end
     end
@@ -60,7 +64,7 @@ module RAML
     def load_file(path, namespace = "")
       if File.exists?(path)
         dir = File.dirname path
-        spec = YAML.parse File.read(path)
+        spec = YAML.parse(File.read(path))
         load_libraries(spec, dir)
         load_directives(spec, namespace, dir)
         load_resources(spec)

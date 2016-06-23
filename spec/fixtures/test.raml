@@ -18,7 +18,7 @@ types:
   Article:
     type: common.Article
     properties:
-      title: string
+      foo: bar
 
 /things:
   type: collectionType
@@ -27,6 +27,15 @@ types:
     is: [ searchable ]
     responses:
       200:
-        body: Article
-    
+        description: List of things
+        body: common.Article
+      404:
+        description: Error
+        body:
+          application/xml:
+            type: Article
+
+/others:
+  type: collectionType
+
 

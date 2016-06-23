@@ -42,14 +42,14 @@ module RAML
   class Api
     include CommonMethods
       
-    alias TreeType = String | RAML::Resource | Hash(String, TreeType)
+    alias TreeType = String | Resource | Hash(String, TreeType)
 
     getter :resources
 
     def initialize
       @spec = Hash(YAML::Type, YAML::Type).new
       @resources = Hash(String, TreeType).new
-      @data_types = Hash(String, RAML::DataType).new
+      @data_types = Hash(String, DataType).new
     end
     
     def empty_hash
@@ -97,14 +97,14 @@ module RAML
     end
     
     def add_resource(url, tree, spec)
-      resource = RAML::Resource.new(self, url, spec)
+      resource = Resource.new(self, url, spec)
       tree["endpoint"] = resource if resource.endpoint?
       resource
     end
     
     def build_data_types
       (@spec["types"] as Hash).each do |key, value|
-        @data_types[key.to_s] = RAML::DataType.new(key.to_s, value as Hash)
+        @data_types[key.to_s] = DataType.new(key.to_s, value as Hash)
       end
       @data_types.each do |_, data_type|
         data_type.resolve(self)
@@ -125,6 +125,19 @@ module RAML
         end
       end
     end
+    
+    def all_resources(root = resources)
+      res = Hash(String, Resource).new
+      root.each do |url, value|
+        if value.is_a? Hash
+          if (value as Hash)["endpoint"]?
+            res[url] = (value as Hash)["endpoint"] as Resource
+          end
+          res.merge! all_resources(value)
+        end
+      end
+      res
+    end
 
   end
 
@@ -135,11 +148,11 @@ module RAML
     
     VERBS = %w{ get post put patch delete options head }
 
-    def initialize(api : RAML::Api, @url : String, spec)
+    def initialize(api : Api, @url : String, spec)
       @spec = merge_resource_type(spec, api) as Hash(YAML::Type, YAML::Type)
-      @requests = Array(RAML::Request).new
+      @requests = Array(Request).new
       @spec.each do |key, spec|
-        @requests << RAML::Request.new(api, key as String, merge_traits(@spec, spec, api)) if VERBS.includes?(key.to_s.downcase)
+        @requests << Request.new(api, key as String, merge_traits(@spec, spec, api)) if VERBS.includes?(key.to_s.downcase)
       end
     end
     
@@ -147,11 +160,11 @@ module RAML
       if name = (spec as Hash).delete("type")
         if resource_type = (api.spec("resourceTypes") as Hash)[name]?
           VERBS.each do |verb|
-            if val = (resource_type as Hash).delete(verb)
+            if val = (resource_type as Hash)[verb]?
               spec[verb] = spec[verb]? ? (val as Hash).merge(spec[verb] as Hash) : val
             end
           end
-          spec = (resource_type as Hash).merge(spec as Hash) 
+          spec = (resource_type as Hash).merge(spec as Hash)
         end
       end
       spec
@@ -169,12 +182,12 @@ module RAML
   
     getter :verb, :request, :responses
     
-    def initialize(api : RAML::Api, @verb : String, spec : Hash(YAML::Type, YAML::Type))
+    def initialize(api : Api, @verb : String, spec : Hash(YAML::Type, YAML::Type))
       @spec = merge_traits(spec, spec, api) as Hash(YAML::Type, YAML::Type)
-      @responses = Array(RAML::Response).new
+      @responses = Array(Response).new
       if resp = @spec.delete("responses") as Hash
         resp.each do |code, spec|
-          @responses << RAML::Response.new(api, code.to_s, spec as Hash)
+          @responses << Response.new(api, code.to_s, spec as Hash)
         end
       end
     end
@@ -194,12 +207,12 @@ module RAML
     getter :code, :media_types
     
     def initialize(api, @code : String, @spec : Hash(YAML::Type, YAML::Type))
-      @media_types = Hash(String, RAML::MediaType).new
+      @media_types = Hash(String, MediaType).new
       case @spec["body"]?
         when String
           data_type = api.data_type(@spec["body"])
           api.default_media_types.each do |media_type|
-            @media_types[media_type.to_s] = RAML::MediaType.new(media_type.to_s, data_type as RAML::DataType)
+            @media_types[media_type.to_s] = MediaType.new(media_type.to_s, data_type as DataType)
           end
         when Hash
           (@spec["body"] as Hash).each do |media_type, spec|
@@ -207,9 +220,9 @@ module RAML
             when String
               api.data_type(spec)
             when Hash
-              spec["type"]? ? api.data_type(spec["type"]) : RAML::DataType.new("", spec)
+              spec["type"]? ? api.data_type(spec["type"]) : DataType.new("", spec)
             end
-            @media_types[media_type.to_s] = RAML::MediaType.new(media_type.to_s, data_type as RAML::DataType)
+            @media_types[media_type.to_s] = MediaType.new(media_type.to_s, data_type as DataType)
         end
       end
     end
@@ -221,7 +234,7 @@ module RAML
     
     getter :data_type
     
-    def initialize(@media_type : String, @data_type : RAML::DataType)
+    def initialize(@media_type : String, @data_type : DataType)
     end
 
   end

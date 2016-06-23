@@ -14,7 +14,7 @@ html
             h1
               ==api("title")
               small
-                | version
+                | version 
                 ==api("version")
             p ==api("description")
       .row
@@ -36,6 +36,7 @@ html
                   - if value.is_a? Hash
                     ul.collapse.in id=html_id(url)
                       - value.each do |url, resource|
+                        - p resource
                         li class=nav_class(resource)
                           a.endpoint onclick="toggleNav(this, '#{html_id((resource as RAML::Resource).url)}')"
                             ==url
@@ -44,7 +45,7 @@ html
                                 span.badge =rq.verb
 
         .col-md-9
-          - resources.each do |r|
+          - api.all_resources.each do |url, r|
             .resource.collapse id=html_id(r.url)
               .requests
                 - r.requests.each do |rq|
@@ -63,22 +64,29 @@ html
                       .tab-pane role="tabpanel" id="#{id}_request"
                         h5 Query Parameters
                         ul
-                        - rq.queryParameters.each do |name, type|
+                        - rq.queryParameters.each do |name, spec|
                           li
-                            span.name ==name
-                            span.type ==type
+                            .property
+                              span.prop_name ==name
+                              span.prop_type ==(spec as Hash)["type"]? || "string" 
+                              span.prop_description ==(spec as Hash)["description"]? || ""
                       .tab-pane role="tabpanel" id="#{id}_responses"
                         - rq.responses.each do |resp|
-                          h5 ==resp.code
-                          p ==resp.spec("description")
+                          h3
+                            ==resp.code
+                            small ==resp.spec("description")
                           ul 
                             - resp.media_types.each do |mime, media_type|
                               li
-                                h4 == mime
-                                h5 == media_type.data_type.name
-                                ul
-                                  - media_type.data_type.properties.each do |k,v|
-                                    li =="#{k} (#{v})"
+                                span.media-type
+                                  ==mime + ": "
+                                a href="##{html_id(r.url + media_type.data_type.name)}" data-toggle="collapse"
+                                  span.data-type == media_type.data_type.name
+                                ul.collapse id="#{html_id(r.url + media_type.data_type.name)}"
+                                  - media_type.data_type.properties.each do |name,type|
+                                    .property
+                                      span.prop_name ==name
+                                      span.prop_type ==type 
                                 
                                
   
