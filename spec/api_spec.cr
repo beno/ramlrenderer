@@ -42,7 +42,6 @@ class ApiTest < Minitest::Test
     resource = (api.resources[api.resources.first_key] as Hash)["endpoint"] as RAML::Resource
     request = resource.requests.first
     response = request.responses.first
-    p response.spec("type")
   end
   
 

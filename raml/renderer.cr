@@ -53,7 +53,7 @@ module RAML
     end
     
     def nav_class(resource)
-       resource.class == RAML::Resource && (resource as RAML::Resource).endpoint? ? "endpoint" : "parent"
+      resource.class == RAML::Resource && (resource as RAML::Resource).endpoint? ? "endpoint" : "parent"
     end
     
     def resources(root = @api.resources)

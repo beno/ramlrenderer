@@ -74,10 +74,10 @@ html
                           ul 
                             - resp.media_types.each do |mime, media_type|
                               li
-                                h5 == mime
-                                h6 == media_type.data_type.name
+                                h4 == mime
+                                h5 == media_type.data_type.name
                                 ul
-                                  - (media_type.data_type.spec("properties") as Hash).each do |k,v|
+                                  - media_type.data_type.properties.each do |k,v|
                                     li =="#{k} (#{v})"
                                 
                                

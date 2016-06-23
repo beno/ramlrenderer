@@ -246,5 +246,9 @@ module RAML
       end
     end
     
+    def properties
+      (spec("properties") || Hash(YAML::Type, YAML::Type).new) as Hash
+    end
+    
   end
 end
