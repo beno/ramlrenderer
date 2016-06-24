@@ -36,3 +36,26 @@ span.badge {
   text-transform: uppercase;
   background-color: #c4c4c4;
 }
+
+.prop_name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.prop_type {
+  color: #7a7a7a;
+  font-style: italic;
+}
+
+.prop_type::before {
+  content: " (";
+}
+
+.prop_type::after {
+ content: ")";
+}
+
+.prop_description {
+  margin-left: 10px;
+}
+

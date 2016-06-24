@@ -1,43 +1,7 @@
 require "yaml"
+require "./shared"
 
 module RAML
-  
-  module CommonMethods
-    
-    def interpolate(string : String)
-      string.scan(/\{([^\}]*)\}/).each do |match|
-        if val = @spec[match[1]]?
-          string = string.sub match[0], val
-        end
-      end
-      string
-    end
-    
-    def spec(name)
-      if val = @spec[name]?
-        case val
-        when String
-          interpolate val
-        else
-          val
-        end
-      end
-    end
-        
-    def merge_traits(source_spec, target_spec, api)
-      if traits = (source_spec as Hash).delete("is")
-        (traits as Array).each do |name|
-          if trait = (api.spec("traits") as Hash)[name]? as Hash 
-            trait.each do |key, val|
-              (target_spec as Hash)[key] = (target_spec as Hash)[key]? ? (val as Hash).merge((target_spec as Hash)[key] as Hash) : val
-            end
-          end
-        end
-      end
-      target_spec as Hash(YAML::Type, YAML::Type)
-    end
-
-  end
   
   class Api
     include CommonMethods
@@ -52,14 +16,6 @@ module RAML
       @data_types = Hash(String, DataType).new
     end
     
-    def empty_hash
-      Hash(YAML::Type, YAML::Type).new
-    end
-    
-    def empty_array
-      Array(YAML::Type).new
-    end
-
     def default_media_types
       media_types = Array(YAML::Type).new
       if types = @spec["mediaType"]?
@@ -79,6 +35,7 @@ module RAML
       if match = name.to_s.match /(.*)\[\]$/
         name = match[1]
       end
+      name = name.to_s
       @data_types[name.to_s]?
     end
 
@@ -143,16 +100,17 @@ module RAML
 
   class Resource
     include CommonMethods
+    include ResourceTypeTraitsMethods
 
-    getter :requests, :url
+    getter :requests, :api, :url
     
     VERBS = %w{ get post put patch delete options head }
 
-    def initialize(api : Api, @url : String, spec)
+    def initialize(@api : Api, @url : String, spec)
       @spec = merge_resource_type(spec, api) as Hash(YAML::Type, YAML::Type)
       @requests = Array(Request).new
       @spec.each do |key, spec|
-        @requests << Request.new(api, key as String, merge_traits(@spec, spec, api)) if VERBS.includes?(key.to_s.downcase)
+        @requests << Request.new(self, key.to_s, merge_traits(@spec, spec, api)) if VERBS.includes?(key.to_s.downcase)
       end
     end
     
@@ -170,7 +128,7 @@ module RAML
       spec
     end
 
-    
+
     def endpoint?
       @requests.any?
     end
@@ -179,53 +137,74 @@ module RAML
   
   class Request
     include CommonMethods
-  
-    getter :verb, :request, :responses
+    include ResourceTypeTraitsMethods
     
-    def initialize(api : Api, @verb : String, spec : Hash(YAML::Type, YAML::Type))
+    getter :verb, :resource, :request, :responses
+    
+    def initialize(@resource : Resource, @verb : String, spec : Hash(YAML::Type, YAML::Type))
       @spec = merge_traits(spec, spec, api) as Hash(YAML::Type, YAML::Type)
       @responses = Array(Response).new
       if resp = @spec.delete("responses") as Hash
         resp.each do |code, spec|
-          @responses << Response.new(api, code.to_s, spec as Hash)
+          @responses << Response.new(self, code.to_s, spec as Hash)
         end
       end
     end
     
-    def queryParameters
-      @spec["queryParameters"]? ? @spec["queryParameters"] as Hash(YAML::Type, YAML::Type) : Hash(YAML::Type, YAML::Type).new
+    def query_parameters
+      @spec["queryParameters"]? || empty_hash
     end
     
-    def body
-      @spec["body"]? ? @spec["body"] as Hash(YAML::Type, YAML::Type) : Hash(YAML::Type, YAML::Type).new
+    def api
+      @resource.api
     end
+    
+    def url
+      @resource.url
+    end
+
+
   end
 
   class Response
     include CommonMethods
-    
+    include ResourceTypeTraitsMethods
+
     getter :code, :media_types
     
-    def initialize(api, @code : String, @spec : Hash(YAML::Type, YAML::Type))
+    def initialize(@request : Request, @code : String, @spec : Hash(YAML::Type, YAML::Type))
       @media_types = Hash(String, MediaType).new
       case @spec["body"]?
         when String
-          data_type = api.data_type(@spec["body"])
-          api.default_media_types.each do |media_type|
-            @media_types[media_type.to_s] = MediaType.new(media_type.to_s, data_type as DataType)
-          end
+          add_media_types(api.default_media_types, @spec["body"].to_s)
         when Hash
           (@spec["body"] as Hash).each do |media_type, spec|
             data_type = case spec
             when String
-              api.data_type(spec)
+              add_media_types [media_type], interpolate(spec)
             when Hash
-              spec["type"]? ? api.data_type(spec["type"]) : DataType.new("", spec)
+              add_media_types [media_type], interpolate(spec["type"] as String ) if spec["type"]?
             end
-            @media_types[media_type.to_s] = MediaType.new(media_type.to_s, data_type as DataType)
         end
       end
     end
+    
+    def add_media_types(media_types : Array(YAML::Type), type_spec : String)
+      if data_type = api.data_type(interpolate(type_spec))
+        media_types.each do |media_type|
+          @media_types[media_type.to_s] = MediaType.new(media_type.to_s, data_type as DataType)
+        end
+      end
+    end
+    
+    def api
+      @request.resource.api
+    end
+    
+    def url
+      @request.resource.url
+    end
+
   end
   
   class MediaType

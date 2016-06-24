@@ -64,7 +64,7 @@ html
                       .tab-pane role="tabpanel" id="#{id}_request"
                         h5 Query Parameters
                         ul
-                        - rq.queryParameters.each do |name, spec|
+                        - (rq.query_parameters as Hash).each do |name, spec|
                           li
                             .property
                               span.prop_name ==name

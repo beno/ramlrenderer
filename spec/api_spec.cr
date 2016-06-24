@@ -30,7 +30,7 @@ class ApiTest < Minitest::Test
   end
 
   def test_resource_type_merge_2
-    spec = api.resources["/others"] as Hash
+    spec = api.resources["/articles"] as Hash
     assert spec.has_key? "endpoint"
   end
   
@@ -67,11 +67,27 @@ class ApiTest < Minitest::Test
     assert media_type.data_type.properties.has_key? "foo"
   end
   
-  def test_resource_type_variable
-    #resource = resource("/others")
-    #request = resource.requests.first
-    #assert (request.spec("queryParameters") as Hash).has_key? "query"
+  def test_interpolate_resourcePathName
+    resource = resource("/articles")
+    request = resource.requests.first
+    assert_equal "Get a list of articles.", request.spec("description")
   end
+  
+  def test_interpolate_resourcePath
+    resource = resource("/articles")
+    assert_equal "Collection of available ARTICLES.", resource.spec("description")
+  end
+
+  def test_interpolate_resourcePath_type
+    resource = resource("/articles")
+    response = resource.requests.first.responses.first
+    assert_equal 1, response.media_types.size
+    response.media_types.each do |_, media_type|
+      assert_equal "Article", media_type.data_type.name
+      assert media_type.data_type.properties.has_key? "title"
+    end
+  end
+
 
 
 end
