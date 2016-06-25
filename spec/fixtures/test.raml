@@ -8,20 +8,23 @@ uses:
   common: types/main/article.raml
 
 resourceTypes:
-  collectionType: resourceTypes/collectionType.raml
+  collectionType: !include resourceTypes/collectionType.raml
 
 traits:
-  searchable: traits/search.raml
-  secured: traits/secured.raml
+  searchable: !include traits/search.raml
+  secured: !include traits/secured.raml
 
 types:
   Article:
     type: common.Article
     properties:
-      foo: bar
+      foo: string
 
 /things:
-  type: collectionType
+  type:
+    collectionType:
+      exampleCollection:
+        title: foo
   is: [ secured ]
   get:
     is: [ searchable ]
@@ -36,6 +39,7 @@ types:
             type: Article
 
 /articles:
-  type: collectionType
-
-
+  type:
+    collectionType:
+      exampleCollection:
+        title: bar

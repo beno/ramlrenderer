@@ -50,8 +50,10 @@ module RAML
       end
     end
           
-    def html_id(url)
-      url.downcase.tr("/{}.", "_")
+    def html_id(*elements)
+      elements.map do |element|
+        element.downcase.tr("/{}.", "_")
+      end.join("_")
     end
     
     def nav_class(resource)

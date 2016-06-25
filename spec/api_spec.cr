@@ -81,12 +81,21 @@ class ApiTest < Minitest::Test
   def test_interpolate_resourcePath_type
     resource = resource("/articles")
     response = resource.requests.first.responses.first
+    p response.media_types.map {|_,t| t.media_type }
     assert_equal 1, response.media_types.size
     response.media_types.each do |_, media_type|
       assert_equal "Article", media_type.data_type.name
       assert media_type.data_type.properties.has_key? "title"
     end
   end
+  
+  def test_example
+    resource = resource("/articles")
+    response = resource.requests.first.responses.first
+    media_type = response.media_types[response.media_types.keys.first]
+    assert_equal = {"foo" => "bar"}, media_type["example"]
+  end
+    
 
 
 

@@ -38,8 +38,8 @@ span.badge {
 }
 
 .prop_name {
-  font-weight: 600;
-  font-size: 16px;
+  font-weight: 400;
+  font-size: 15px;
 }
 
 .prop_type {
@@ -55,7 +55,7 @@ span.badge {
  content: ")";
 }
 
-.prop_description {
-  margin-left: 10px;
+.description {
+  margin-left: 12px;
 }
 

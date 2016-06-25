@@ -11,6 +11,11 @@ class Interpolator
     @url = "/articles"
     @spec = Hash(YAML::Type, YAML::Type).new
   end
+  
+  def interpolate(s)
+    interpolate_variables(s)
+  end
+  
 end
 
 

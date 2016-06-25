@@ -39,12 +39,17 @@ module RAML
       Array(YAML::Type).new
     end
     
-    def interpolate(string : String)
+    def interpolate_directives(string : String)
+      return string unless @spec.is_a? Hash
       string.scan(/\{([^\}]*)\}/).each do |match|
-        if val = @spec[match[1]]?
+        if val = (@spec as Hash)[match[1]]?
           string = string.sub match[0], val
         end
       end
+      string
+    end
+    
+    def interpolate_variables(string : String)
       string.scan(/<<([^>]*)>>/).each do |match|
         string = string.sub match[0], process_variable(match[1])
       end
@@ -93,16 +98,34 @@ module RAML
     end
         
     def spec(name)
-      if val = @spec[name]?
+      return name unless @spec.is_a? Hash
+      if val = (@spec as Hash)[name]?
         case val
         when String
-          interpolate val
+          interpolate_variables interpolate_directives(val)
         else
           val
         end
       end
     end
+    
+    def _data_type
+      api.data_type(_type)
+    end
         
+    def _type(spec = @spec)
+      case spec
+      when String
+        interpolate_variables spec.to_s
+      when Hash
+        if data_type = (spec as Hash)["type"]?
+          _type(data_type)
+        else
+          _type((spec as Hash).first_key)
+        end
+      end
+    end
+    
   end
 
 end

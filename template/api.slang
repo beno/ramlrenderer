@@ -50,9 +50,9 @@ html
               .requests
                 - r.requests.each do |rq|
                   .request
-                    h4
+                    h3
                       =="#{rq.verb.upcase} #{r.url}"
-                    p ==rq.spec("description")
+                      small.description ==rq.spec("description")
                     ul.nav.nav-tabs role="tablist"
                       - id = "#{html_id(r.url)}_#{rq.verb}"
                       li role="presentation"
@@ -69,20 +69,20 @@ html
                             .property
                               span.prop_name ==name
                               span.prop_type ==(spec as Hash)["type"]? || "string" 
-                              span.prop_description ==(spec as Hash)["description"]? || ""
+                              span.description ==(spec as Hash)["description"]? || ""
                       .tab-pane role="tabpanel" id="#{id}_responses"
                         - rq.responses.each do |resp|
-                          h3
+                          h4
                             ==resp.code
-                            small ==resp.spec("description")
+                            small.description ==resp.spec("description")
                           ul 
                             - resp.media_types.each do |mime, media_type|
                               li
                                 span.media-type
                                   ==mime + ": "
-                                a href="##{html_id(r.url + media_type.data_type.name)}" data-toggle="collapse"
+                                a href="##{html_id(r.url, resp.code, media_type.data_type.name)}" data-toggle="collapse"
                                   span.data-type == media_type.data_type.name
-                                ul.collapse id="#{html_id(r.url + media_type.data_type.name)}"
+                                ul.collapse id="#{html_id(r.url, resp.code, media_type.data_type.name)}"
                                   - media_type.data_type.properties.each do |name,type|
                                     .property
                                       span.prop_name ==name

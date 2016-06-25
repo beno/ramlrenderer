@@ -35,7 +35,6 @@ module RAML
       if match = name.to_s.match /(.*)\[\]$/
         name = match[1]
       end
-      name = name.to_s
       @data_types[name.to_s]?
     end
 
@@ -106,24 +105,26 @@ module RAML
     
     VERBS = %w{ get post put patch delete options head }
 
-    def initialize(@api : Api, @url : String, spec)
-      @spec = merge_resource_type(spec, api) as Hash(YAML::Type, YAML::Type)
+    def initialize(@api : Api, @url : String, @spec)
+      @spec = merge_resource_type(@spec, api) as Hash(YAML::Type, YAML::Type)
       @requests = Array(Request).new
       @spec.each do |key, spec|
         @requests << Request.new(self, key.to_s, merge_traits(@spec, spec, api)) if VERBS.includes?(key.to_s.downcase)
       end
     end
     
+    def resource_type
+      (api.spec("resourceTypes") as Hash)[_type]?
+    end
+    
     def merge_resource_type(spec, api)
-      if name = (spec as Hash).delete("type")
-        if resource_type = (api.spec("resourceTypes") as Hash)[name]?
-          VERBS.each do |verb|
-            if val = (resource_type as Hash)[verb]?
-              spec[verb] = spec[verb]? ? (val as Hash).merge(spec[verb] as Hash) : val
-            end
+      if resource_type
+        VERBS.each do |verb|
+          if val = (resource_type as Hash)[verb]?
+            spec[verb] = spec[verb]? ? (val as Hash).merge(spec[verb] as Hash) : val
           end
-          spec = (resource_type as Hash).merge(spec as Hash)
         end
+        spec = (resource_type as Hash).merge(spec as Hash)
       end
       spec
     end
@@ -170,29 +171,22 @@ module RAML
     include CommonMethods
     include ResourceTypeTraitsMethods
 
-    getter :code, :media_types
+    getter :code, :media_types, :request, :spec
     
     def initialize(@request : Request, @code : String, @spec : Hash(YAML::Type, YAML::Type))
       @media_types = Hash(String, MediaType).new
-      case @spec["body"]?
-        when String
-          add_media_types(api.default_media_types, @spec["body"].to_s)
-        when Hash
-          (@spec["body"] as Hash).each do |media_type, spec|
-            data_type = case spec
-            when String
-              add_media_types [media_type], interpolate(spec)
-            when Hash
-              add_media_types [media_type], interpolate(spec["type"] as String ) if spec["type"]?
-            end
-        end
-      end
+      add_media_types(@spec)
     end
-    
-    def add_media_types(media_types : Array(YAML::Type), type_spec : String)
-      if data_type = api.data_type(interpolate(type_spec))
-        media_types.each do |media_type|
-          @media_types[media_type.to_s] = MediaType.new(media_type.to_s, data_type as DataType)
+
+    def add_media_types(@spec)
+      case @spec["body"]?
+      when String
+        api.default_media_types.each do |media_type|
+          @media_types[media_type.to_s] = MediaType.new self, media_type.to_s, @spec["body"]
+        end
+      when Hash
+        (@spec["body"] as Hash).each do |media_type, spec|
+          @media_types[media_type.to_s] = MediaType.new self, media_type.to_s, spec
         end
       end
     end
@@ -209,11 +203,23 @@ module RAML
   
   class MediaType
     include CommonMethods
-
+    include ResourceTypeTraitsMethods
     
-    getter :data_type
+    getter :media_type, :spec
     
-    def initialize(@media_type : String, @data_type : DataType)
+    def initialize(@response : Response, @media_type : String, @spec : YAML::Type)
+    end
+    
+    def data_type
+      @data_type ||= _data_type || @response._data_type || DataType.new("Unknown", empty_hash)
+    end
+    
+    def api
+      @response.request.resource.api
+    end
+    
+    def url
+      @response.request.resource.url
     end
 
   end
@@ -222,13 +228,13 @@ module RAML
     include CommonMethods
 
     
-    property :spec, :name
-    
+    getter :spec, :name
+        
     def initialize(@name : String, @spec : Hash(YAML::Type, YAML::Type) )
     end
     
     def resolve(api)
-      if data_type = api.data_type(@spec.delete("type"))
+      if data_type = api.data_type(_type)
         inherit_from data_type.resolve(api)
       end
       self

@@ -1,12 +1,13 @@
 #%RAML 1.0 ResourceType
-
+---
 description: Collection of available << resourcePathName | !uppercase >>.
 get:
   description: Get a list of <<resourcePathName>>.
   responses:
     200:
+      description: List of <<resourcePathName>>
       body:
-        type: <<resourcePathName | !singularize | !uppercamelcase >>
         application/json:
+          type: <<resourcePathName | !singularize | !uppercamelcase >>
           example:
             <<exampleCollection>>
