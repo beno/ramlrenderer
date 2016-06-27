@@ -82,11 +82,16 @@ html
                                   ==mime + ": "
                                 a href="##{html_id(r.url, resp.code, media_type.data_type.name)}" data-toggle="collapse"
                                   span.data-type == media_type.data_type.name
-                                ul.collapse id="#{html_id(r.url, resp.code, media_type.data_type.name)}"
-                                  - media_type.data_type.properties.each do |name,type|
-                                    .property
-                                      span.prop_name ==name
-                                      span.prop_type ==type 
+                                .collapse id="#{html_id(r.url, resp.code, media_type.data_type.name)}"
+                                  .col-md-6
+                                    - media_type.data_type.properties.each do |name,type|
+                                      .property
+                                        span.prop_name ==name
+                                        span.prop_type ==type 
+                                  .col-md-6
+                                    ==media_type.example
+                                  .clearfix
+
                                 
                                
   
