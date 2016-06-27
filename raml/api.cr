@@ -21,9 +21,9 @@ module RAML
       if types = @spec["mediaType"]?
         case types
         when String
-          media_types << (types as String)
+          media_types << types.as(String)
         when Array
-          media_types.concat(types as Array(YAML::Type))
+          media_types.concat types.as(Array(YAML::Type))
         end
       else
         media_types << "application/json"
@@ -45,7 +45,7 @@ module RAML
   
     def add_namespace(spec, namespace)
       traversed = empty_hash
-      (spec as Hash).each do |key, value|
+      spec.as(Hash).each do |key, value|
         val = {"#{namespace}#{key.to_s}" as YAML::Type => value as YAML::Type}
         traversed.merge!(val)
       end
@@ -59,23 +59,25 @@ module RAML
     end
     
     def build_data_types
-      (@spec["types"] as Hash).each do |key, value|
-        @data_types[key.to_s] = DataType.new(key.to_s, value as Hash)
-      end
-      @data_types.each do |_, data_type|
-        data_type.resolve(self)
+      if types = @spec["types"]?
+        types.as(Hash).each do |key, value|
+          @data_types[key.to_s] = DataType.new(key.to_s, value as Hash)
+        end
+        @data_types.each do |_, data_type|
+          data_type.resolve(self)
+        end
       end
     end
 
     def add_directive(directive, spec, namespace = "")
-      if val = (spec as Hash)[directive]?
+      if val = spec.as(Hash)[directive]?
         case val.class
         when Hash.class
           @spec[directive] = empty_hash unless @spec[directive]? 
-          (@spec[directive] as Hash).merge! add_namespace(val, namespace)
+          @spec[directive].as(Hash).merge! add_namespace(val, namespace)
         when Array.class
           @spec[directive] = empty_array unless @spec[directive]? 
-          (@spec[directive] as Array(YAML::Type)).concat((val as Array(YAML::Type)))
+          @spec[directive].as(Array(YAML::Type)).concat(val.as(Array(YAML::Type)))
         when String.class
           @spec[directive] = val as String
         end
@@ -86,50 +88,59 @@ module RAML
       res = Hash(String, Resource).new
       root.each do |url, value|
         if value.is_a? Hash
-          if (value as Hash)["endpoint"]?
-            res[url] = (value as Hash)["endpoint"] as Resource
+          if value.as(Hash)["endpoint"]?
+            res[url] = value.as(Hash)["endpoint"] as Resource
           end
           res.merge! all_resources(value)
         end
       end
       res
     end
+    
+    def directive_spec(name)
+      interpolate_directives(spec(name).to_s)
+    end
 
+  end
+  
+  class TypeSpec
+    include CommonMethods
+    
+    getter :parameters
+    
+    def initialize(@spec : YAML::Type)
+      @parameters = empty_hash as Hash(YAML::Type, YAML::Type)
+      if @spec = @spec.as(Hash)["type"]?
+        case @spec
+        when Hash
+          @spec.as(Hash).each do |key, val|
+            @parameters = val.as(Hash).merge @parameters
+          end
+        end
+      end
+    end
+         
   end
 
   class Resource
     include CommonMethods
     include ResourceTypeTraitsMethods
 
-    getter :requests, :api, :url
+    getter :requests, :api, :url, :spec, :resource_type_spec
     
-    VERBS = %w{ get post put patch delete options head }
-
-    def initialize(@api : Api, @url : String, @spec)
-      @spec = merge_resource_type(@spec, api) as Hash(YAML::Type, YAML::Type)
+    def initialize(@api : Api, @url : String, @spec : Hash(YAML::Type, YAML::Type))
+      @resource_type_spec = TypeSpec.new(@spec)
       @requests = Array(Request).new
+      deep_merge(resource_type)
       @spec.each do |key, spec|
-        @requests << Request.new(self, key.to_s, merge_traits(@spec, spec, api)) if VERBS.includes?(key.to_s.downcase)
+        @requests << Request.new(self, key.to_s, spec.as(Hash)) if Request::VERBS.includes?(key.to_s.downcase)
       end
     end
     
     def resource_type
-      (api.spec("resourceTypes") as Hash)[_type]?
+      api.spec("resourceTypes").as(Hash)[@resource_type_spec._type]?
     end
     
-    def merge_resource_type(spec, api)
-      if resource_type
-        VERBS.each do |verb|
-          if val = (resource_type as Hash)[verb]?
-            spec[verb] = spec[verb]? ? (val as Hash).merge(spec[verb] as Hash) : val
-          end
-        end
-        spec = (resource_type as Hash).merge(spec as Hash)
-      end
-      spec
-    end
-
-
     def endpoint?
       @requests.any?
     end
@@ -139,21 +150,44 @@ module RAML
   class Request
     include CommonMethods
     include ResourceTypeTraitsMethods
-    
+
+    VERBS = %w{ get post put patch delete options head }
+
     getter :verb, :resource, :request, :responses
     
-    def initialize(@resource : Resource, @verb : String, spec : Hash(YAML::Type, YAML::Type))
-      @spec = merge_traits(spec, spec, api) as Hash(YAML::Type, YAML::Type)
+    def initialize(@resource : Resource, @verb : String, @spec : Hash(YAML::Type, YAML::Type))
+      @parameters = empty_hash as Hash(YAML::Type, YAML::Type)
+      merge_traits(@resource.spec)
+      merge_traits(@spec)
       @responses = Array(Response).new
-      if resp = @spec.delete("responses") as Hash
-        resp.each do |code, spec|
+      if resp = spec("responses")
+        resp.as(Hash).each do |code, spec|
           @responses << Response.new(self, code.to_s, spec as Hash)
         end
       end
     end
     
+    def merge_traits(source_spec)
+      if traits = source_spec.as(Hash)["is"]?
+       traits.as(Array).each do |name|
+          _name = case name
+          when Hash
+            n = name.as(Hash).first_key
+            @parameters = name.as(Hash)[n].as(Hash).merge @parameters
+            n
+          when String
+            name
+          end
+          if trait = api.spec("traits").as(Hash)[_name]?
+            deep_merge(trait)
+          end
+        end
+      end
+    end
+
+ 
     def query_parameters
-      @spec["queryParameters"]? || empty_hash
+      interpolate_hash (@spec["queryParameters"]? || empty_hash).as(Hash)
     end
     
     def api
@@ -163,8 +197,11 @@ module RAML
     def url
       @resource.url
     end
-
-
+    
+    def parameters
+      @resource.resource_type_spec.parameters.merge @parameters
+    end
+      
   end
 
   class Response
@@ -185,7 +222,7 @@ module RAML
           @media_types[media_type.to_s] = MediaType.new self, media_type.to_s, @spec["body"]
         end
       when Hash
-        (@spec["body"] as Hash).each do |media_type, spec|
+        @spec["body"].as(Hash).each do |media_type, spec|
           @media_types[media_type.to_s] = MediaType.new self, media_type.to_s, spec
         end
       end
@@ -198,7 +235,7 @@ module RAML
     def url
       @request.resource.url
     end
-
+    
   end
   
   class MediaType
@@ -221,6 +258,22 @@ module RAML
     def url
       @response.request.resource.url
     end
+    
+    def example(_spec = spec("example"))
+      case _spec
+      when String
+        parameter?(_spec) || _spec
+      when Hash
+        _spec
+      when Nil
+        example @response.request.resource.resource_type_spec["example"]
+      end
+    end
+    
+    def parameters
+      @response.request.resource.resource_type_spec.parameters
+    end
+
 
   end
     
@@ -242,7 +295,7 @@ module RAML
     
     def inherit_from(data_type : DataType)
       data_type.spec.each do |key, value|
-        @spec[key] = @spec[key]? ? (data_type.spec[key] as Hash).merge(@spec[key] as Hash) : data_type.spec[key]
+        @spec[key] = @spec[key]? ? data_type.spec[key].as(Hash).merge(@spec[key].as(Hash)) : data_type.spec[key]
       end
     end
     

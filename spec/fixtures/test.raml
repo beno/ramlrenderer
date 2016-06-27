@@ -4,6 +4,8 @@ title: Test API
 baseUri: https://api.example.com/{version}
 version: v1
 
+mediaType: ["application/json"]
+
 uses:
   common: types/main/article.raml
 
@@ -21,10 +23,6 @@ types:
       foo: string
 
 /things:
-  type:
-    collectionType:
-      exampleCollection:
-        title: foo
   is: [ secured ]
   get:
     is: [ searchable ]
@@ -37,6 +35,9 @@ types:
         body:
           application/xml:
             type: Article
+            example:
+              title: foo
+              foo: bar
 
 /articles:
   type:

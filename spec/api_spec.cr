@@ -21,7 +21,7 @@ class ApiTest < Minitest::Test
   end
   
   def test_base_uri
-    assert_equal "https://api.example.com/v1", (@api as RAML::Api).spec("baseUri")
+    assert_equal "https://api.example.com/v1", (@api as RAML::Api).directive_spec("baseUri")
   end
     
   def test_resource_type_merge
@@ -81,7 +81,6 @@ class ApiTest < Minitest::Test
   def test_interpolate_resourcePath_type
     resource = resource("/articles")
     response = resource.requests.first.responses.first
-    p response.media_types.map {|_,t| t.media_type }
     assert_equal 1, response.media_types.size
     response.media_types.each do |_, media_type|
       assert_equal "Article", media_type.data_type.name
@@ -89,12 +88,20 @@ class ApiTest < Minitest::Test
     end
   end
   
-  def test_example
+  def test_resource_type_example
     resource = resource("/articles")
     response = resource.requests.first.responses.first
     media_type = response.media_types[response.media_types.keys.first]
-    assert_equal = {"foo" => "bar"}, media_type["example"]
+    assert_equal Hash{"title" => "bar"}.to_s, media_type.example.to_s
   end
+  
+  def test_data_type_example
+    resource = resource("/things")
+    response = resource.requests.first.responses.last
+    media_type = response.media_types[response.media_types.keys.first]
+    assert_equal Hash{"title" => "foo", "foo" => "bar"}.to_s, media_type.example.to_s
+  end
+
     
 
 

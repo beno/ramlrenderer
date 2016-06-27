@@ -1,0 +1,17 @@
+#%RAML 1.0
+---
+title: Test API
+baseUri: https://api.example.com/{version}
+version: v1
+
+mediaType: ["application/json"]
+
+uses:
+  common: types/main/article.raml
+
+/things:
+  get:
+    responses:
+      200:
+        description: List of things
+        body: common.Article

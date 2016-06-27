@@ -6,10 +6,11 @@ class Interpolator
   include RAML::ResourceTypeTraitsMethods
 
   property :url
-  
+  getter :parameters
+    
   def initialize
     @url = "/articles"
-    @spec = Hash(YAML::Type, YAML::Type).new
+    @parameters = Hash(YAML::Type, YAML::Type).new
   end
   
   def interpolate(s)

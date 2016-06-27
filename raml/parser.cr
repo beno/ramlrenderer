@@ -26,8 +26,8 @@ module RAML
       when String
         spec.to_s.match(/.raml$/) ? YAML.parse(File.read(File.join(dir, spec.to_s))).raw : spec
       when Hash
-        (spec as Hash).each do |k, v|
-          spec[k as YAML::Type] = load_includes(v, dir)
+        spec.as(Hash).each do |k, v|
+          spec[k.as(YAML::Type)] = load_includes(v, dir)
         end
       else
         spec 
@@ -40,7 +40,7 @@ module RAML
     
     def load_directives(spec, namespace, dir)
       DIRECTIVES.each do |directive|
-        (spec.raw as Hash)[directive as YAML::Type] = load_includes((spec.raw as Hash)[directive]?, dir) as YAML::Type
+        spec.raw.as(Hash)[directive.as(YAML::Type)] = load_includes(spec.raw.as(Hash)[directive]?, dir) as YAML::Type
         @api.add_directive directive, spec.raw, namespace
       end
       @api.build_data_types
@@ -53,7 +53,7 @@ module RAML
           old_url = url
           url += key.to_s
           tree = @api.add_leaf tree, key.to_s
-          @api.add_resource(url, tree, value.raw as Hash(YAML::Type, YAML::Type) )
+          @api.add_resource(url, tree, value.raw.as(Hash(YAML::Type, YAML::Type)))
           load_resources value, tree as Hash, url
           tree = old_tree
           url = old_url

@@ -1,52 +1,71 @@
+#require "json"
+
 module RAML
   
   module ResourceTypeTraitsMethods
     
-    def replace(variable)
-      case variable
-      when "resourcePath"
-        url
-      when "resourcePathName"
-        url.split("/").last
-      else
-        variable
-      end      
-    end
-    
-    def merge_traits(source_spec, target_spec, api)
-      if traits = (source_spec as Hash).delete("is")
-        (traits as Array).each do |name|
-          if trait = (api.spec("traits") as Hash)[name]? as Hash 
-            trait.each do |key, val|
-              (target_spec as Hash)[key] = (target_spec as Hash)[key]? ? (val as Hash).merge((target_spec as Hash)[key] as Hash) : val
+    def deep_merge(source, target = @spec)
+      case source
+      when Hash
+        source.each do |key, val|
+          target.as(Hash)[key] = if _val = target[key]?
+            if val.is_a?(Hash) && _val.is_a?(Hash)
+              deep_merge(val, _val)
+            else
+              val
             end
+          else
+            val
           end
         end
+        target
       end
-      target_spec as Hash(YAML::Type, YAML::Type)
     end
-  
-  
+        
   end
   
   module CommonMethods
     
-    def empty_hash
+    def empty_hash : Hash(YAML::Type, YAML::Type)
       Hash(YAML::Type, YAML::Type).new
     end
     
-    def empty_array
+    def empty_array : Array(YAML::Type)
       Array(YAML::Type).new
     end
     
     def interpolate_directives(string : String)
       return string unless @spec.is_a? Hash
       string.scan(/\{([^\}]*)\}/).each do |match|
-        if val = (@spec as Hash)[match[1]]?
+        if val = directive?(match[1])
           string = string.sub match[0], val
         end
       end
       string
+    end
+    
+    def directive?(name, spec = @spec)
+      return spec unless @spec.is_a? Hash
+      spec.as(Hash)[name]?
+    end
+    
+    def url
+      ""
+    end
+    
+    def parameters
+      empty_hash
+    end
+
+    def parameter?(name)
+      case name
+      when "resourcePath"
+        url
+      when "resourcePathName"
+        url.split("/").last
+      else
+        parameters[name]?
+      end
     end
     
     def interpolate_variables(string : String)
@@ -59,7 +78,7 @@ module RAML
     def process_variable(variable)
       parts = variable.split("|").map {|v| v.strip}
       variable = parts.shift
-      variable = replace variable
+      variable = (parameter?(variable) || variable).to_s
       parts.each do |operation|
         variable = case operation
         when "!singularize"
@@ -88,6 +107,19 @@ module RAML
       end
       variable
     end
+    
+    def interpolate_hash(hash)
+      new_hash = typeof(hash).new
+      hash.each do |key, value|
+        new_hash[interpolate_variables(key.as(String))] = case value
+        when String
+          interpolate_variables(value.as(String))
+        when Hash
+          interpolate_hash(value.as(Hash))
+        end
+      end
+      new_hash
+    end
       
     def replace(variable)
       variable
@@ -99,10 +131,10 @@ module RAML
         
     def spec(name)
       return name unless @spec.is_a? Hash
-      if val = (@spec as Hash)[name]?
+      if val = @spec.as(Hash)[name]?
         case val
         when String
-          interpolate_variables interpolate_directives(val)
+          interpolate_variables(val)
         else
           val
         end
@@ -116,12 +148,12 @@ module RAML
     def _type(spec = @spec)
       case spec
       when String
-        interpolate_variables spec.to_s
+        interpolate_variables spec
       when Hash
-        if data_type = (spec as Hash)["type"]?
+        if data_type = spec.as(Hash)["type"]?
           _type(data_type)
         else
-          _type((spec as Hash).first_key)
+          _type(spec.as(Hash).first_key)
         end
       end
     end

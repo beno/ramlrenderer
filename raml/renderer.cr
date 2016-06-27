@@ -17,7 +17,7 @@ module RAML
     end
     
     def api(name)
-      @api.spec(name)
+      @api.directive_spec(name)
     end
     
     def write(path)
@@ -38,12 +38,12 @@ module RAML
         if key.to_s[0] == '/'
           old_url = url
           url += key
-          if val = (value as Hash)["endpoint"]?
-            (root as Hash)[url] = val
-            parse_nav_tree(url, value as Hash, (root as Hash))
+          if val = value.as(Hash)["endpoint"]?
+            root.as(Hash)[url] = val
+            parse_nav_tree(url, value.as(Hash), root.as(Hash))
           else
-            (root as Hash)[url] = Hash(String, RAML::Api::TreeType).new
-            parse_nav_tree(url, value as Hash, (root as Hash)[url])
+            root.as(Hash)[url] = Hash(String, RAML::Api::TreeType).new
+            parse_nav_tree(url, value as Hash, root.as(Hash)[url])
           end
           url = old_url
         end
@@ -57,7 +57,7 @@ module RAML
     end
     
     def nav_class(resource)
-      resource.class == RAML::Resource && (resource as RAML::Resource).endpoint? ? "endpoint" : "parent"
+      resource.class == RAML::Resource && resource.as(RAML::Resource).endpoint? ? "endpoint" : "parent"
     end
             
   end
