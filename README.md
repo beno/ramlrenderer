@@ -34,5 +34,6 @@ The plan is to grow this into a fully compliant RAML 1.0 parser. Next steps:
 - merge data types (done)
 - interpolate <\<variables>> in resourceTypes, traits, etc (done)
 - handle examples (done)
+- handle security setting
 - handle the various specification styles (responses/request) RAML allows
 - error handling
