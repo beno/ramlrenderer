@@ -20,16 +20,30 @@ module RAML
       @api.directive_spec(name)
     end
     
-    def write(path)
-      html = render
+    def write_file(content, path)
       dir = File.dirname(path)
       Dir.mkdir_p(dir)
-      File.write path, html
-      copy_file dir, "js"
-      copy_file dir, "css"
+      File.write path, content
     end
     
-    def copy_file(dir, extension)
+    def write(path)
+      html = render
+      write_file html, path
+      copy_file path, "js"
+      copy_file path, "css"
+    end
+    
+    def bundle(path)
+      html = render
+      js = File.read(File.expand_path("../../template/api.js", __FILE__))
+      css = File.read(File.expand_path("../../template/api.css", __FILE__))
+      html = html.sub "<script src=\"api.js\" type=\"text/javascript\"></script>", "<script type=\"text/javascript\">\n#{js}\n</script>"
+      html = html.sub "<link rel=\"stylesheet\" href=\"api.css\">", "<style>\n#{css}\n</style>"
+      write_file html, path
+    end
+    
+    def copy_file(path, extension)
+      dir = File.dirname(path)
       File.write File.join(dir, "api.#{extension}"), File.read(File.expand_path("../../template/api.#{extension}", __FILE__))
     end
     

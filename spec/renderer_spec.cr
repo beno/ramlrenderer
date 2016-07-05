@@ -15,8 +15,16 @@ class RendererTest < Minitest::Test
     end
   end
   
+  def test_bundle_file
+    (@renderer as RAML::Renderer).bundle File.join(@dir as String, "bundle.html")
+    %w{ bundle.html }.each do |f|
+      assert File.exists?(File.join(@dir as String, f))
+    end
+
+  end
+  
   def teardown
-    %w{ myapi.html api.js api.css }.each do |f|
+    %w{ myapi.html api.js api.css bundle.html }.each do |f|
       file = File.join(@dir as String, f)
       File.delete(file) if File.exists?(file)
     end

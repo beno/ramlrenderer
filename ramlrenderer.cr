@@ -23,7 +23,17 @@ cli = Commander::Command.new do |cmd|
     flag.description = "The output HTML file."
   end
   
+  cmd.flags.add do |flag|
+    flag.name = "bundle"
+    flag.short = "-b"
+    flag.long = "--bundle"
+    flag.default = "true"
+    flag.description = "Bundle all files in a single HTML file. Set to false for individual files."
+  end
+  
   cmd.run do |options, arguments|
+    p options
+    p arguments
     input = arguments.first? && arguments.first || options.string["input"]
     unless File.exists?(input)
       puts "RAML file \"#{input}\" not found"
@@ -36,7 +46,7 @@ cli = Commander::Command.new do |cmd|
     if output == ""
       puts renderer.render
     else
-      renderer.write output
+      options.string["bundle"] == "true" ? renderer.bundle output : renderer.write output
       puts "HTML written to #{output}"
     end
   end
