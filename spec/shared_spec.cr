@@ -3,7 +3,6 @@ require "../raml/shared"
 
 class Interpolator
   include RAML::CommonMethods
-  include RAML::ResourceTypeTraitsMethods
 
   property :url
   getter :parameters

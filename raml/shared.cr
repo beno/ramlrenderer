@@ -1,29 +1,27 @@
-#require "json"
-
-module RAML
+class Hash
   
-  module ResourceTypeTraitsMethods
-    
-    def deep_merge(source, target = @spec)
-      case source
-      when Hash
-        source.each do |key, val|
-          target.as(Hash)[key] = if _val = target[key]?
-            if val.is_a?(Hash) && _val.is_a?(Hash)
-              deep_merge(val, _val)
-            else
-              val
-            end
+  def deep_merge(source)
+    case source
+    when Hash
+      source.each do |key, val|
+        self[key] = if _val = self[key]?
+          if val.is_a?(Hash) && _val.is_a?(Hash)
+            _val.deep_merge(val)
           else
             val
           end
+        else
+          val
         end
-        target
       end
+      self
     end
-        
   end
-  
+
+end
+
+module RAML
+    
   module CommonMethods
     
     def empty_hash : Hash(YAML::Type, YAML::Type)

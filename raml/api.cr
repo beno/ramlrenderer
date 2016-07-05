@@ -124,14 +124,13 @@ module RAML
 
   class Resource
     include CommonMethods
-    include ResourceTypeTraitsMethods
 
     getter :requests, :api, :url, :spec, :resource_type_spec
     
     def initialize(@api : Api, @url : String, @spec : Hash(YAML::Type, YAML::Type))
       @resource_type_spec = TypeSpec.new(@spec)
       @requests = Array(Request).new
-      deep_merge(resource_type)
+      @spec.deep_merge(resource_type)
       @spec.each do |key, spec|
         @requests << Request.new(self, key.to_s, spec.as(Hash)) if Request::VERBS.includes?(key.to_s.downcase)
       end
@@ -149,7 +148,6 @@ module RAML
   
   class Request
     include CommonMethods
-    include ResourceTypeTraitsMethods
 
     VERBS = %w{ get post put patch delete options head }
 
@@ -179,7 +177,7 @@ module RAML
             name
           end
           if trait = api.spec("traits").as(Hash)[_name]?
-            deep_merge(trait)
+            @spec.deep_merge(trait)
           end
         end
       end
@@ -206,7 +204,6 @@ module RAML
 
   class Response
     include CommonMethods
-    include ResourceTypeTraitsMethods
 
     getter :code, :media_types, :request, :spec
     
@@ -240,7 +237,6 @@ module RAML
   
   class MediaType
     include CommonMethods
-    include ResourceTypeTraitsMethods
     
     getter :media_type, :spec
     
