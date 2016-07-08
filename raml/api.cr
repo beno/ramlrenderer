@@ -149,11 +149,12 @@ module RAML
 
     VERBS = %w{ get post put patch delete options head }
 
-    getter :verb, :resource, :request, :responses, :uri_parameters
+    getter :verb, :resource, :request, :responses, :uri_parameters, :headers
     
     def initialize(@resource : Resource, @verb : String, @spec : Hash(YAML::Type, YAML::Type))
       @parameters = empty_hash.as(Hash(YAML::Type, YAML::Type))
       @uri_parameters = empty_hash.as(Hash(YAML::Type, YAML::Type))
+      @headers = empty_hash.as(Hash(YAML::Type, YAML::Type))
       merge_traits(@resource.spec)
       merge_traits(@spec)
       parse_uri_parameters
@@ -167,16 +168,16 @@ module RAML
     
     def merge_traits(source_spec)
       if traits = source_spec.as(Hash)["is"]?
-       traits.as(Array).each do |name|
-          _name = case name
+       traits.as(Array).each do |spec|
+          name = case spec
           when Hash
-            n = name.as(Hash).first_key
-            @parameters = name.as(Hash)[n].as(Hash).deep_merge!(@parameters).as(Hash)
+            n = spec.as(Hash).first_key
+            @parameters.deep_merge! spec.as(Hash)[n].as(Hash)
             n
           when String
-            name
+            spec
           end
-          if trait = api.spec("traits").as(Hash)[_name]?
+          if trait = api.spec("traits").as(Hash)[name]?
             @spec.deep_merge!(trait)
           end
         end
@@ -201,6 +202,10 @@ module RAML
     
     def query_parameters
       interpolate_hash (@spec["queryParameters"]? || empty_hash).as(Hash)
+    end
+    
+    def headers
+      interpolate_hash (@spec["headers"]? || empty_hash).as(Hash)
     end
     
     def api

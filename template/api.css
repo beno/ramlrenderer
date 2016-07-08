@@ -59,3 +59,13 @@ span.badge {
   margin-left: 12px;
 }
 
+span.example::before {
+  content: "example: ";
+}
+
+span.example {
+  color: #7a7a7a;
+  margin-left: 20px;
+}
+
+

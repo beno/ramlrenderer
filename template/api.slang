@@ -60,6 +60,17 @@ html
                     .clearfix
                     .tab-content
                       .tab-pane role="tabpanel" id="#{id}_request"
+                        - if rq.headers.any?
+                          h5 Headers
+                          ul
+                          - (rq.headers as Hash).each do |name, spec|
+                            li
+                              .property
+                                span.prop_name ==name
+                                span.prop_type ==type_declaration(spec) 
+                                span.description ==(spec as Hash)["description"]? || ""
+                                - if spec.as(Hash)["example"]?
+                                  span.example ==(spec as Hash)["example"]
                         - if rq.uri_parameters.any?
                           h5 URI Parameters
                           ul
@@ -67,8 +78,10 @@ html
                             li
                               .property
                                 span.prop_name ==name
-                                span.prop_type ==(spec as Hash)["type"]? || "string" 
+                                span.prop_type ==type_declaration(spec) 
                                 span.description ==(spec as Hash)["description"]? || ""
+                                - if spec.as(Hash)["example"]?
+                                  span.example ==(spec as Hash)["example"]
                         - if rq.query_parameters.any?
                           h5 Query Parameters
                           ul
@@ -76,8 +89,10 @@ html
                             li
                               .property
                                 span.prop_name ==name
-                                span.prop_type ==(spec as Hash)["type"]? || "string" 
+                                span.prop_type ==type_declaration(spec) 
                                 span.description ==(spec as Hash)["description"]? || ""
+                                - if spec.as(Hash)["example"]?
+                                  span.example ==(spec as Hash)["example"]
                       .tab-pane role="tabpanel" id="#{id}_responses"
                         - rq.responses.each do |resp|
                           h4

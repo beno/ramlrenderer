@@ -74,6 +74,22 @@ module RAML
     def nav_class(resource)
       resource.class == RAML::Resource && resource.as(RAML::Resource).endpoint? ? "endpoint" : "parent"
     end
+    
+    def type_declaration(spec)
+      if type = (spec as Hash)["type"]?
+        if type == "array"
+          if items = (spec as Hash)["items"]?
+            "array of #{items.to_s}"
+          else
+            "array of string"
+          end
+        else
+          type
+        end
+      else
+        "string"
+      end
+    end
             
   end
   
