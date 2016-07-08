@@ -47,17 +47,18 @@ module RAML
       File.write File.join(dir, "api.#{extension}"), File.read(File.expand_path("../../template/api.#{extension}", __FILE__))
     end
     
-    def parse_nav_tree(url : String, tree : Hash, root = @nav_tree)
+    def parse_nav_tree(url : String, tree : Hash, root = @nav_tree, skip = "")
       tree.each do |key, value|
         if key.to_s[0] == '/'
           old_url = url
           url += key
           if val = value.as(Hash)["endpoint"]?
-            root.as(Hash)[url] = val
-            parse_nav_tree(url, value.as(Hash), root.as(Hash))
+            skipped = url.sub /^#{skip}(.*)$/, "\\1"
+            root.as(Hash)[skipped] = val
+            parse_nav_tree(url, value.as(Hash), root.as(Hash), skip)
           else
             root.as(Hash)[url] = Hash(String, TreeType).new
-            parse_nav_tree(url, value as Hash, root.as(Hash)[url])
+            parse_nav_tree(url, value as Hash, root.as(Hash)[url], skip + url)
           end
           url = old_url
         end
