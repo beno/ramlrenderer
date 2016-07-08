@@ -32,8 +32,6 @@ cli = Commander::Command.new do |cmd|
   end
   
   cmd.run do |options, arguments|
-    p options
-    p arguments
     input = arguments.first? && arguments.first || options.string["input"]
     unless File.exists?(input)
       puts "RAML file \"#{input}\" not found"
@@ -46,7 +44,7 @@ cli = Commander::Command.new do |cmd|
     if output == ""
       puts renderer.render
     else
-      options.string["bundle"] == "true" ? renderer.bundle output : renderer.write output
+      options.string["bundle"] == "true" ? renderer.bundle(output) : renderer.write(output)
       puts "HTML written to #{output}"
     end
   end

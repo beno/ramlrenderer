@@ -24,7 +24,7 @@ html
               - nav_cl = nav_class(value)
               - if  nav_cl == "endpoint"
                 li class=nav_class(value)
-                  a.endpoint onclick="toggleNav(this, '#{html_id((value as RAML::Resource).url)}')"
+                  a.endpoint onclick=="toggleNav(this, '#{html_id((value as RAML::Resource).url)}')"
                     ==url
                     span.pull-right
                       - (value as RAML::Resource).requests.each do |rq|
@@ -36,17 +36,15 @@ html
                   - if value.is_a? Hash
                     ul.collapse.in id=html_id(url)
                       - value.each do |url, resource|
-                        - p resource
                         li class=nav_class(resource)
-                          a.endpoint onclick="toggleNav(this, '#{html_id((resource as RAML::Resource).url)}')"
+                          a.endpoint onclick=="toggleNav(this, '#{html_id((resource as RAML::Resource).url)}')"
                             ==url
                             span.pull-right
                               - (resource as RAML::Resource).requests.each do |rq|
                                 span.badge =rq.verb
-
         .col-md-9
           - api.all_resources.each do |url, r|
-            .resource.collapse id=html_id(r.url)
+            .resource.collapse id==html_id(r.url)
               .requests
                 - r.requests.each do |rq|
                   .request

@@ -1,0 +1,22 @@
+#%RAML 1.0
+title: Example API
+version: v1
+resourceTypes:
+  member:
+    get:
+      responses:
+        200:
+          body: foo
+/ping:
+  /pong:
+    type: member
+/foo:
+  /bar:
+    /{id}:
+      type: member
+/jabba:
+  /dabba:
+    /doo:
+      /{id}:
+        type: member
+

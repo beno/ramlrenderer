@@ -8,7 +8,7 @@ module RAML
     getter :nav_tree, :api
         
     def initialize(@api : RAML::Api)
-      @nav_tree = Hash(String, RAML::Api::TreeType).new
+      @nav_tree = Hash(String, TreeType).new
       parse_nav_tree("", @api.resources)
     end
     
@@ -56,7 +56,7 @@ module RAML
             root.as(Hash)[url] = val
             parse_nav_tree(url, value.as(Hash), root.as(Hash))
           else
-            root.as(Hash)[url] = Hash(String, RAML::Api::TreeType).new
+            root.as(Hash)[url] = Hash(String, TreeType).new
             parse_nav_tree(url, value as Hash, root.as(Hash)[url])
           end
           url = old_url

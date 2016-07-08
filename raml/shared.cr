@@ -1,12 +1,12 @@
 class Hash
   
-  def deep_merge(source)
+  def deep_merge!(source)
     case source
     when Hash
       source.each do |key, val|
         self[key] = if _val = self[key]?
           if val.is_a?(Hash) && _val.is_a?(Hash)
-            _val.deep_merge(val)
+            _val.deep_merge!(val)
           else
             val
           end
@@ -17,11 +17,25 @@ class Hash
       self
     end
   end
+  
+  def ensure_path!(path, separator = "/")
+    hash = self
+    path.split(separator).each do |part|
+      next if part == ""
+      part = "#{separator}#{part}"
+      hash.as(Hash)[part] = typeof(self).new unless hash.as(Hash)[part]?
+      hash = hash.as(Hash)[part]
+    end
+    hash.as(Hash)
+  end
 
 end
 
 module RAML
-    
+  
+  alias TreeType = String | Resource | Hash(String, TreeType)
+
+  
   module CommonMethods
     
     def empty_hash : Hash(YAML::Type, YAML::Type)
@@ -46,7 +60,7 @@ module RAML
       return spec unless @spec.is_a? Hash
       spec.as(Hash)[name]?
     end
-    
+        
     def url
       ""
     end

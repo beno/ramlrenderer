@@ -100,10 +100,6 @@ class ApiTest < Minitest::Test
     response = resource.requests.first.responses.last
     media_type = response.media_types[response.media_types.keys.first]
     assert_equal Hash{"title" => "foo", "foo" => "bar"}.to_s, media_type.example.to_s
-  end
-
+  end 
     
-
-
-
 end

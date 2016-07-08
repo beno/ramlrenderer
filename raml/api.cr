@@ -5,9 +5,7 @@ module RAML
   
   class Api
     include CommonMethods
-      
-    alias TreeType = String | Resource | Hash(String, TreeType)
-
+    
     getter :resources
 
     def initialize
@@ -37,11 +35,6 @@ module RAML
       end
       @data_types[name.to_s]?
     end
-
-    def add_leaf(tree : Hash, name : String)
-      tree[name] = Hash(String, TreeType).new unless tree[name]?
-      tree[name] as Hash
-    end
   
     def add_namespace(spec, namespace)
       traversed = empty_hash
@@ -52,9 +45,10 @@ module RAML
       traversed
     end
     
-    def add_resource(url, tree, spec)
+    def add_resource(url, spec)
       resource = Resource.new(self, url, spec)
-      tree["endpoint"] = resource if resource.endpoint?
+      endpoint = @resources.ensure_path!(url)
+      endpoint["endpoint"] = resource if resource.endpoint?
       resource
     end
     
@@ -89,9 +83,11 @@ module RAML
       root.each do |url, value|
         if value.is_a? Hash
           if value.as(Hash)["endpoint"]?
-            res[url] = value.as(Hash)["endpoint"] as Resource
+            if resource = value.as(Hash)["endpoint"]
+              res[resource.as(Resource).url] = resource.as(Resource)
+            end
           end
-          res.merge! all_resources(value)
+          res.deep_merge! all_resources(value)
         end
       end
       res
@@ -110,11 +106,13 @@ module RAML
     
     def initialize(@spec : YAML::Type)
       @parameters = empty_hash as Hash(YAML::Type, YAML::Type)
-      if @spec = @spec.as(Hash)["type"]?
-        case @spec
-        when Hash
-          @spec.as(Hash).each do |key, val|
-            @parameters = val.as(Hash).merge @parameters
+      if @spec.is_a?(Hash)
+        if @spec = @spec.as(Hash)["type"]?
+          case @spec
+          when Hash
+            @spec.as(Hash).each do |key, val|
+              @parameters = val.as(Hash).merge @parameters
+            end
           end
         end
       end
@@ -127,17 +125,17 @@ module RAML
 
     getter :requests, :api, :url, :spec, :resource_type_spec
     
-    def initialize(@api : Api, @url : String, @spec : Hash(YAML::Type, YAML::Type))
+    def initialize(@api : Api, @url : String, @spec : YAML::Type)
       @resource_type_spec = TypeSpec.new(@spec)
       @requests = Array(Request).new
-      @spec.deep_merge(resource_type)
-      @spec.each do |key, spec|
+      @spec.as(Hash).deep_merge!(resource_type)
+      @spec.as(Hash).each do |key, spec|
         @requests << Request.new(self, key.to_s, spec.as(Hash)) if Request::VERBS.includes?(key.to_s.downcase)
       end
     end
     
     def resource_type
-      api.spec("resourceTypes").as(Hash)[@resource_type_spec._type]?
+      api.spec("resourceTypes").as(Hash)[@resource_type_spec._type]? if api.spec("resourceTypes")
     end
     
     def endpoint?
@@ -177,7 +175,7 @@ module RAML
             name
           end
           if trait = api.spec("traits").as(Hash)[_name]?
-            @spec.deep_merge(trait)
+            @spec.deep_merge!(trait)
           end
         end
       end
@@ -262,7 +260,7 @@ module RAML
       when Hash
         _spec
       when Nil
-        example @response.request.resource.resource_type_spec["example"]
+#        example @response.request.resource.resource_type_spec["example"]
       end
     end
     

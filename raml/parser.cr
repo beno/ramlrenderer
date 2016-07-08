@@ -2,6 +2,9 @@ require "yaml"
 require "./api"
 
 module RAML
+  
+  class ParseException < Exception
+  end
     
   class Parser
     
@@ -46,19 +49,22 @@ module RAML
       @api.build_data_types
     end
     
-    def load_resources(spec, tree = @api.resources, url = "")
+    def load_resources(spec, url = "")
+      hash!(spec)
       spec.each do |key, value|
         if key.to_s[0] == '/'
-          old_tree = tree
           old_url = url
           url += key.to_s
-          tree = @api.add_leaf tree, key.to_s
-          @api.add_resource(url, tree, value.raw.as(Hash(YAML::Type, YAML::Type)))
-          load_resources value, tree as Hash, url
-          tree = old_tree
+          @api.add_resource(url, hash!(value))
+          load_resources(value, url)
           url = old_url
         end
       end
+    end
+        
+    def hash!(hash)
+      raise ParseException.new("#{hash} is not a Hash") unless hash.raw.is_a?(Hash)
+      hash.raw
     end
     
     def load_file(path, namespace = "")
