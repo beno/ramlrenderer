@@ -7,13 +7,16 @@
 
     $ crystal dep
     
-#### Run
+#### Compile
 
     $ crystal compile ramlrenderer.cr
+
+#### Run
+
     $ ./ramlrenderer -i api.raml -o docs.html   #with flags
     $ ./ramlrenderer api.raml > docs.html       #alternative
     
-or (dev):
+### Development
 
     $ crystal ramlrenderer.cr -- -i api.raml -o docs.html
     
@@ -34,6 +37,7 @@ The plan is to grow this into a fully compliant RAML 1.0 parser. Next steps:
 - merge data types (done)
 - interpolate <\<variables>> in resourceTypes, traits, etc (done)
 - handle examples (done)
+- handle headers (done)
+- handle query strings
 - handle security setting
-- handle the various specification styles (responses/request) RAML allows
-- error handling
+- error handling (done)
