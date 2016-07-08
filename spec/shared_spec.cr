@@ -4,11 +4,11 @@ require "../raml/shared"
 class Interpolator
   include RAML::CommonMethods
 
-  property :url
+  property :uri
   getter :parameters
     
   def initialize
-    @url = "/articles"
+    @uri = "/articles"
     @parameters = Hash(YAML::Type, YAML::Type).new
   end
   
@@ -34,55 +34,55 @@ class SharedTest < Minitest::Test
   end
 
   def test_interpolate_2
-    intp.url = "/article"
+    intp.uri = "/article"
     assert_equal "article", intp.interpolate "<<resourcePathName | !singularize>>"
   end
   
   def test_interpolate_3
-    intp.url = "/article"
+    intp.uri = "/article"
     assert_equal "articles", intp.interpolate "<<resourcePathName | !pluralize>>"
   end
   
   def test_interpolate_4
-    intp.url = "/foo_bar"
+    intp.uri = "/foo_bar"
     assert_equal "fooBar", intp.interpolate "<<resourcePathName | !lowercamelcase>>"
   end
 
   def test_interpolate_5
-    intp.url = "/foo_bar"
+    intp.uri = "/foo_bar"
     assert_equal "FooBar", intp.interpolate "<<resourcePathName | !uppercamelcase>>"
   end
 
   def test_interpolate_6
-    intp.url = "/foobar"
+    intp.uri = "/foobar"
     assert_equal "FOOBAR", intp.interpolate "<<resourcePathName | !uppercase>>"
   end
 
   def test_interpolate_7
-    intp.url = "/fooBar"
+    intp.uri = "/fooBar"
     assert_equal "foobar", intp.interpolate "<<resourcePathName | !lowercase>>"
   end
 
   def test_interpolate_8
-    intp.url = "/foo_bar"
+    intp.uri = "/foo_bar"
     assert_equal "fooBar", intp.interpolate "<<resourcePathName | !lowercamelcase>>"
   end
 
   def test_interpolate_9
-    intp.url = "/fooBar"
+    intp.uri = "/fooBar"
     assert_equal "foo_bar", intp.interpolate "<<resourcePathName | !lowerunderscorecase>>"
   end
 
   def test_interpolate_10
-    intp.url = "/fooBar"
+    intp.uri = "/fooBar"
     assert_equal "FOO_BAR", intp.interpolate "<<resourcePathName | !upperunderscorecase>>"
   end
   def test_interpolate_11
-    intp.url = "/fooBar"
+    intp.uri = "/fooBar"
     assert_equal "foo-bar", intp.interpolate "<<resourcePathName | !lowerhyphencase>>"
   end
   def test_interpolate_12
-    intp.url = "/fooBar"
+    intp.uri = "/fooBar"
     assert_equal "FOO-BAR", intp.interpolate "<<resourcePathName | !upperhyphencase>>"
   end
 

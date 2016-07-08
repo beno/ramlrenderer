@@ -45,9 +45,9 @@ module RAML
       traversed
     end
     
-    def add_resource(url, spec)
-      resource = Resource.new(self, url, spec)
-      endpoint = @resources.ensure_path!(url)
+    def add_resource(uri, spec)
+      resource = Resource.new(self, uri, spec)
+      endpoint = @resources.ensure_path!(uri)
       endpoint["endpoint"] = resource if resource.endpoint?
       resource
     end
@@ -80,11 +80,11 @@ module RAML
     
     def all_resources(root = resources)
       res = Hash(String, Resource).new
-      root.each do |url, value|
+      root.each do |uri, value|
         if value.is_a? Hash
           if value.as(Hash)["endpoint"]?
             if resource = value.as(Hash)["endpoint"]
-              res[resource.as(Resource).url] = resource.as(Resource)
+              res[resource.as(Resource).uri] = resource.as(Resource)
             end
           end
           res.deep_merge! all_resources(value)
@@ -123,9 +123,9 @@ module RAML
   class Resource
     include CommonMethods
 
-    getter :requests, :api, :url, :spec, :resource_type_spec
+    getter :requests, :api, :uri, :spec, :resource_type_spec
     
-    def initialize(@api : Api, @url : String, @spec : YAML::Type)
+    def initialize(@api : Api, @uri : String, @spec : YAML::Type)
       @resource_type_spec = TypeSpec.new(@spec)
       @requests = Array(Request).new
       @spec.as(Hash).deep_merge!(resource_type)
@@ -149,12 +149,14 @@ module RAML
 
     VERBS = %w{ get post put patch delete options head }
 
-    getter :verb, :resource, :request, :responses
+    getter :verb, :resource, :request, :responses, :uri_parameters
     
     def initialize(@resource : Resource, @verb : String, @spec : Hash(YAML::Type, YAML::Type))
-      @parameters = empty_hash as Hash(YAML::Type, YAML::Type)
+      @parameters = empty_hash.as(Hash(YAML::Type, YAML::Type))
+      @uri_parameters = empty_hash.as(Hash(YAML::Type, YAML::Type))
       merge_traits(@resource.spec)
       merge_traits(@spec)
+      parse_uri_parameters
       @responses = Array(Response).new
       if resp = spec("responses")
         resp.as(Hash).each do |code, spec|
@@ -169,7 +171,7 @@ module RAML
           _name = case name
           when Hash
             n = name.as(Hash).first_key
-            @parameters = name.as(Hash)[n].as(Hash).merge @parameters
+            @parameters = name.as(Hash)[n].as(Hash).deep_merge!(@parameters).as(Hash)
             n
           when String
             name
@@ -180,8 +182,23 @@ module RAML
         end
       end
     end
-
- 
+    
+    def parse_uri_parameters
+      params = @resource.uri.scan(/\{([^\}]*)\}/).map do |match|
+        match[1]
+      end.each do |param|
+        @uri_parameters[param] = if uri_params_spec = @resource.spec("uriParameters")
+          if spec = uri_params_spec.as(Hash)[param]?
+            interpolate_hash spec.as(Hash(YAML::Type, YAML::Type))
+          else
+            {"type".as(YAML::Type) => "string".as(YAML::Type)}
+          end
+        else
+          {"type".as(YAML::Type) => "string".as(YAML::Type)}
+        end
+      end
+    end
+    
     def query_parameters
       interpolate_hash (@spec["queryParameters"]? || empty_hash).as(Hash)
     end
@@ -190,8 +207,8 @@ module RAML
       @resource.api
     end
     
-    def url
-      @resource.url
+    def uri
+      @resource.uri
     end
     
     def parameters
@@ -227,8 +244,8 @@ module RAML
       @request.resource.api
     end
     
-    def url
-      @request.resource.url
+    def uri
+      @request.resource.uri
     end
     
   end
@@ -249,8 +266,8 @@ module RAML
       @response.request.resource.api
     end
     
-    def url
-      @response.request.resource.url
+    def uri
+      @response.request.resource.uri
     end
     
     def example(_spec = spec("example"))

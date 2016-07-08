@@ -49,15 +49,15 @@ module RAML
       @api.build_data_types
     end
     
-    def load_resources(spec, url = "")
+    def load_resources(spec, uri = "")
       hash!(spec)
       spec.each do |key, value|
         if key.to_s[0] == '/'
-          old_url = url
-          url += key.to_s
-          @api.add_resource(url, hash!(value))
-          load_resources(value, url)
-          url = old_url
+          old_uri = uri
+          uri += key.to_s
+          @api.add_resource(uri, hash!(value))
+          load_resources(value, uri)
+          uri = old_uri
         end
       end
     end

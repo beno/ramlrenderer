@@ -61,7 +61,7 @@ module RAML
       spec.as(Hash)[name]?
     end
         
-    def url
+    def uri
       ""
     end
     
@@ -72,9 +72,9 @@ module RAML
     def parameter?(name)
       case name
       when "resourcePath"
-        url
+        uri
       when "resourcePathName"
-        url.split("/").last
+        uri.split("/").last
       else
         parameters[name]?
       end

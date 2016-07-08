@@ -16,7 +16,7 @@ class ParserTest < Minitest::Test
   end
 
   def test_resource
-    assert_equal 2, (@api as RAML::Api).resources.size
+    assert_equal 3, (@api as RAML::Api).resources.size
   end
   
   def test_resource_type_include

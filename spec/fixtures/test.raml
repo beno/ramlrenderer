@@ -38,9 +38,31 @@ types:
             example:
               title: foo
               foo: bar
-
+/books:
+  type:
+    collectionType:
+      exampleCollection:
+        title: Books
+  /{bookId}:
+    get:
+      responses:
+        200:
+          body: BOOK
+/authors:
+  type:
+    collectionType:
+      exampleCollection:
+        title: Authors
+  /{authorId}:
+    uriParameters:
+      authorId:
+        type: integer
+    get:
+      responses:
+        200:
+          body: BOOK
 /articles:
   type:
     collectionType:
       exampleCollection:
-        title: bar
+        title: Articles
