@@ -102,9 +102,9 @@ html
                                 .property
                                   span.prop_name ==name
                                   span.prop_type ==type_declaration(spec)
-                            span.description ==rq.query_string.as(RAML::QueryString).spec("description") || ""
-                            - if rq.query_string.as(RAML::QueryString).spec("examples")
-                              span.example ==rq.query_string.as(RAML::QueryString).spec("examples")
+                          span.description ==rq.query_string.as(RAML::QueryString).spec("description") || ""
+                          - if rq.query_string.as(RAML::QueryString).spec("examples")
+                            span.example ==rq.query_string.as(RAML::QueryString).spec("examples")
 
                       .tab-pane role="tabpanel" id="#{id}_responses"
                         - rq.responses.each do |resp|

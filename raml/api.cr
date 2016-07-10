@@ -338,7 +338,6 @@ module RAML
     getter :property_sets
         
     def initialize(@request : Request, @spec : Hash(YAML::Type, YAML::Type) )
-      p @spec
       @property_sets = Array((Hash(YAML::Type, YAML::Type))).new
       if type_spec = hash!(@spec)["type"]?
         case type_spec
