@@ -68,31 +68,44 @@ html
                               .property
                                 span.prop_name ==name
                                 span.prop_type ==type_declaration(spec) 
-                                span.description ==(spec as Hash)["description"]? || ""
+                                span.description ==spec.as(Hash)["description"]? || ""
                                 - if spec.as(Hash)["example"]?
-                                  span.example ==(spec as Hash)["example"]
+                                  span.example ==spec.as(Hash)["example"]
                         - if rq.uri_parameters.any?
                           h5 URI Parameters
                           ul
-                          - (rq.uri_parameters as Hash).each do |name, spec|
+                          - rq.uri_parameters.as(Hash).each do |name, spec|
                             li
                               .property
                                 span.prop_name ==name
                                 span.prop_type ==type_declaration(spec) 
-                                span.description ==(spec as Hash)["description"]? || ""
+                                span.description ==spec.as(Hash)["description"]? || ""
                                 - if spec.as(Hash)["example"]?
-                                  span.example ==(spec as Hash)["example"]
+                                  span.example ==spec.as(Hash)["example"]
                         - if rq.query_parameters.any?
                           h5 Query Parameters
                           ul
-                          - (rq.query_parameters as Hash).each do |name, spec|
+                          - rq.query_parameters.as(Hash).each do |name, spec|
                             li
                               .property
                                 span.prop_name ==name
                                 span.prop_type ==type_declaration(spec) 
-                                span.description ==(spec as Hash)["description"]? || ""
+                                span.description ==spec.as(Hash)["description"]? || ""
                                 - if spec.as(Hash)["example"]?
-                                  span.example ==(spec as Hash)["example"]
+                                  span.example ==spec.as(Hash)["example"]
+                        - if rq.query_string.as(RAML::QueryString).property_sets.any?
+                          h5 Query String
+                          - rq.query_string.as(RAML::QueryString).property_sets.each do |properties|
+                            ul
+                            - properties.each do |name, spec|
+                              li
+                                .property
+                                  span.prop_name ==name
+                                  span.prop_type ==type_declaration(spec)
+                            span.description ==rq.query_string.as(RAML::QueryString).spec("description") || ""
+                            - if rq.query_string.as(RAML::QueryString).spec("examples")
+                              span.example ==rq.query_string.as(RAML::QueryString).spec("examples")
+
                       .tab-pane role="tabpanel" id="#{id}_responses"
                         - rq.responses.each do |resp|
                           h4

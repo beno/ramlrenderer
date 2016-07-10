@@ -1,5 +1,4 @@
 require "./test_helper"
-require "../raml/parser"
 require "../raml/api"
 
 class HeadersTest < Minitest::Test

@@ -38,6 +38,6 @@ The plan is to grow this into a fully compliant RAML 1.0 parser. Next steps:
 - interpolate <\<variables>> in resourceTypes, traits, etc (done)
 - handle examples (done)
 - handle headers (done)
-- handle query strings
+- handle query strings (done)
 - handle security setting
 - error handling (done)

@@ -76,16 +76,21 @@ module RAML
     end
     
     def type_declaration(spec)
-      if type = (spec as Hash)["type"]?
-        if type == "array"
-          if items = (spec as Hash)["items"]?
-            "array of #{items.to_s}"
+      case spec
+      when Hash
+        if type = (spec as Hash)["type"]?
+          if type == "array"
+            if items = (spec as Hash)["items"]?
+              "array of #{items.to_s}"
+            else
+              "array of string"
+            end
           else
-            "array of string"
+            type
           end
-        else
-          type
         end
+      when String
+        spec.empty? ? "string" : spec
       else
         "string"
       end

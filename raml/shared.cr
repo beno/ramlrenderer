@@ -1,5 +1,9 @@
 class Hash
   
+  def deep_merge(source)
+    self.dup.deep_merge!(source)
+  end
+  
   def deep_merge!(source)
     case source
     when Hash
@@ -14,8 +18,8 @@ class Hash
           val
         end
       end
-      self
     end
+    self
   end
   
   def ensure_path!(path, separator = "/")
@@ -45,6 +49,17 @@ module RAML
     def empty_array : Array(YAML::Type)
       Array(YAML::Type).new
     end
+    
+    def hash!(hash) : Hash
+      raise ParseException.new("#{hash} is not a Hash") unless hash.is_a?(Hash)
+      hash.as(Hash)
+    end
+    
+    def array!(array) : Array
+      raise ParseException.new("#{array} is not an Array") unless array.is_a?(Array)
+      array.as(Array)
+    end
+
     
     def interpolate_directives(string : String)
       return string unless @spec.is_a? Hash

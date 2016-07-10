@@ -6,7 +6,7 @@ module RAML
   class Api
     include CommonMethods
     
-    getter :resources
+    getter :resources, :data_types
 
     def initialize
       @spec = Hash(YAML::Type, YAML::Type).new
@@ -54,7 +54,7 @@ module RAML
     
     def build_data_types
       if types = @spec["types"]?
-        types.as(Hash).each do |key, value|
+        hash!(types).each do |key, value|
           @data_types[key.to_s] = DataType.new(key.to_s, value as Hash)
         end
         @data_types.each do |_, data_type|
@@ -106,13 +106,11 @@ module RAML
     
     def initialize(@spec : YAML::Type)
       @parameters = empty_hash as Hash(YAML::Type, YAML::Type)
-      if @spec.is_a?(Hash)
-        if @spec = @spec.as(Hash)["type"]?
-          case @spec
-          when Hash
-            @spec.as(Hash).each do |key, val|
-              @parameters = val.as(Hash).merge @parameters
-            end
+      if @spec = hash!(@spec)["type"]?
+        case @spec
+        when Hash
+          @spec.as(Hash).each do |key, val|
+            @parameters.deep_merge! val.as(Hash)
           end
         end
       end
@@ -149,7 +147,7 @@ module RAML
 
     VERBS = %w{ get post put patch delete options head }
 
-    getter :verb, :resource, :request, :responses, :uri_parameters, :headers
+    getter :verb, :resource, :request, :responses, :uri_parameters, :headers, :query_string
     
     def initialize(@resource : Resource, @verb : String, @spec : Hash(YAML::Type, YAML::Type))
       @parameters = empty_hash.as(Hash(YAML::Type, YAML::Type))
@@ -164,11 +162,12 @@ module RAML
           @responses << Response.new(self, code.to_s, spec as Hash)
         end
       end
+      parse_query_string
     end
     
     def merge_traits(source_spec)
-      if traits = source_spec.as(Hash)["is"]?
-       traits.as(Array).each do |spec|
+      if traits = hash!(source_spec)["is"]?
+       array!(traits).each do |spec|
           name = case spec
           when Hash
             n = spec.as(Hash).first_key
@@ -198,6 +197,15 @@ module RAML
           {"type".as(YAML::Type) => "string".as(YAML::Type)}
         end
       end
+    end
+    
+    def parse_query_string
+      spec = if query_string = @spec["queryString"]?
+        hash!(query_string)
+      else
+        empty_hash
+      end
+      @query_string = QueryString.new(self, spec)
     end
     
     def query_parameters
@@ -311,7 +319,8 @@ module RAML
     
     def inherit_from(data_type : DataType)
       data_type.spec.each do |key, value|
-        @spec[key] = @spec[key]? ? data_type.spec[key].as(Hash).merge(@spec[key].as(Hash)) : data_type.spec[key]
+        @spec[key] = empty_hash unless @spec[key]?
+        @spec[key].as(Hash).deep_merge!(value)
       end
     end
     
@@ -319,5 +328,80 @@ module RAML
       (spec("properties") || Hash(YAML::Type, YAML::Type).new) as Hash
     end
     
+  end
+  
+  alias MatrixType = String | Array(MatrixType)
+
+  class QueryString
+    include CommonMethods
+    
+    getter :property_sets
+        
+    def initialize(@request : Request, @spec : Hash(YAML::Type, YAML::Type) )
+      p @spec
+      @property_sets = Array((Hash(YAML::Type, YAML::Type))).new
+      if type_spec = hash!(@spec)["type"]?
+        case type_spec
+        when Array
+          merge_data_types type_spec
+        when String
+          merge_data_types [type_spec]
+        end
+      end
+    end
+    
+    def properties(index = 0)
+      if @property_sets[index]?
+        @property_sets[index]
+      else
+        empty_hash
+      end.as(Hash)
+    end
+    
+    def combine_unions(unions)
+      if unions.size == 1
+        unions.first.map {|type| {type} }
+      else
+        unions.first.product *Tuple(Array(String)).from(unions[1..-1])
+      end
+    end
+    
+    def parse_type_spec(type_spec)
+      skalars = Array(String).new
+      unions = Array(Array(String)).new
+      type_sets = Array(Array(String)).new
+      array!(type_spec).each do |type|
+        if type.as(String).match /\|/
+          types = type.as(String).split "|"
+          unions << types.map {|t| t.as(String).strip}
+        else
+          skalars << type.as(String).strip
+        end
+      end
+      if unions.any?
+        union_sets = combine_unions(unions)
+        union_sets.each do |union_set|
+          type_sets << (skalars.dup.concat union_set)
+        end
+      else
+        type_sets = [skalars]
+      end
+      type_sets
+    end
+    
+    
+    def merge_data_types(type_spec)
+      type_sets = parse_type_spec(type_spec)
+      type_sets.each do |type_set|
+        property_set = empty_hash.as(Hash(YAML::Type, YAML::Type))
+        type_set.each do |type|
+          if data_type = @request.resource.api.data_types[type]?
+            property_set.merge! data_type.properties
+          end
+        end
+        @property_sets << property_set
+      end
+    end
+
   end
 end
