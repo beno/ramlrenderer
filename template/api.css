@@ -68,4 +68,8 @@ span.example {
   margin-left: 20px;
 }
 
+li.option {
+  font-style: italic;
+  color: #7a7a7a;
+}
 

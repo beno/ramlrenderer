@@ -16,6 +16,8 @@ html
               small
                 | version 
                 ==api("version")
+                small
+                  =="#{api("protocols")} #{api("baseUri")}"
             p ==api("description")
       .row
         .col-md-3
@@ -97,14 +99,16 @@ html
                           h5 Query String
                           - rq.query_string.as(RAML::QueryString).property_sets.each do |properties|
                             ul
-                            - properties.each do |name, spec|
-                              li
-                                .property
-                                  span.prop_name ==name
-                                  span.prop_type ==type_declaration(spec)
+                              - if rq.query_string.as(RAML::QueryString).property_sets.size > 1
+                                li.option Option
+                              - properties.each do |name, spec|
+                                li
+                                  .property
+                                    span.prop_name ==name
+                                    span.prop_type ==type_declaration(spec)
                           span.description ==rq.query_string.as(RAML::QueryString).spec("description") || ""
-                          - if rq.query_string.as(RAML::QueryString).spec("examples")
-                            span.example ==rq.query_string.as(RAML::QueryString).spec("examples")
+                          - rq.query_string.as(RAML::QueryString).examples.each do |example|
+                            span.example ==example
 
                       .tab-pane role="tabpanel" id="#{id}_responses"
                         - rq.responses.each do |resp|

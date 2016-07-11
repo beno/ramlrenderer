@@ -401,6 +401,24 @@ module RAML
         @property_sets << property_set
       end
     end
+    
+    def examples
+      examples = Array(String).new
+      if spec = @spec["examples"]?
+        hash!(spec).each do |name, example|
+          params = Array(String).new
+          hash!(example.as(Hash)["content"]).each do |key, value|
+            params << "#{key}=#{value}"
+          end
+          str = params.join("&")
+          if example.as(Hash)["strict"]?
+            str += " strict: #{example.as(Hash)["strict"]}"
+          end
+          examples << str
+        end
+      end
+      examples
+    end
 
   end
 end
