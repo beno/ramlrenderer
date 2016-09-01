@@ -1,0 +1,7 @@
+steal 'can/fixtures', ->
+  <% api.all_resources.as(Hash).each do |url, res| %>
+    <% res.requests.each do |req| %>
+      <%= req.verb %> <%= url %> <%= "foo&bar" %> 
+    <% end %>
+  <% end %>
+  

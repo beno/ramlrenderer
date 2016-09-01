@@ -1,4 +1,5 @@
 require "yaml"
+require "json"
 require "./shared"
 
 module RAML
@@ -6,27 +7,32 @@ module RAML
   class Api
     include CommonMethods
     
-    getter :resources, :data_types
 
+    getter :resources, :source_files, :default_serializations, :data_types
+    
+    def spec(name)
+      @spec[name]?
+    end
+        
     def initialize
-      @spec = Hash(YAML::Type, YAML::Type).new
-      @resources = Hash(String, TreeType).new
+      @default_serializations = ["application/json".as(YAML::Type)]
       @data_types = Hash(String, DataType).new
+      @source_files = Array(String).new
+      @resources = Hash(String, TreeType).new
+      @spec = Hash(YAML::Type, YAML::Type).new
+      build_default_serializations
     end
     
-    def default_media_types
-      media_types = Array(YAML::Type).new
+    def build_default_serializations
       if types = @spec["mediaType"]?
+        @default_serializations = Array(YAML::Type).new
         case types
         when String
-          media_types << types.as(String)
+          @default_serializations << types.as(String)
         when Array
-          media_types.concat types.as(Array(YAML::Type))
+          @default_serializations.concat types.as(Array(YAML::Type))
         end
-      else
-        media_types << "application/json"
       end
-      media_types
     end
     
     def data_type(name)
@@ -65,14 +71,14 @@ module RAML
 
     def add_directive(directive, spec, namespace = "")
       if val = spec.as(Hash)[directive]?
-        case val.class
-        when Hash.class
+        case val
+        when Hash
           @spec[directive] = empty_hash unless @spec[directive]? 
           @spec[directive].as(Hash).merge! add_namespace(val, namespace)
-        when Array.class
+        when Array
           @spec[directive] = empty_array unless @spec[directive]? 
           @spec[directive].as(Array(YAML::Type)).concat(val.as(Array(YAML::Type)))
-        when String.class
+        when String
           @spec[directive] = val as String
         end
       end
@@ -96,24 +102,53 @@ module RAML
     def directive_spec(name)
       interpolate_directives(spec(name).to_s)
     end
+    
+    def interpolate_directives(string : String)
+      return string unless @spec.is_a? Hash
+      string.scan(/\{([^\}]*)\}/).each do |match|
+        if val = directive?(match[1])
+          string = string.sub match[0], val
+        end
+      end
+      string
+    end
+
+    def directive?(name, spec = @spec)
+      return spec unless spec.is_a? Hash
+      spec.as(Hash)[name]?
+    end
+
 
   end
   
-  class TypeSpec
+  class ResourceType
     include CommonMethods
     
     getter :parameters
     
-    def initialize(@spec : YAML::Type)
+    def initialize(@resource : Resource, @spec : YAML::Type)
       @parameters = empty_hash as Hash(YAML::Type, YAML::Type)
-      if @spec = hash!(@spec)["type"]?
-        case @spec
+      if spec = hash!(@spec)["type"]?
+        resource_type_name = case spec
+        when String
+          spec.as(String)
         when Hash
-          @spec.as(Hash).each do |key, val|
-            @parameters.deep_merge! val.as(Hash)
-          end
+          @parameters.deep_merge! spec.as(Hash).first_value
+          spec.as(Hash).first_key
         end
+        unless @spec = source(resource_type_name)
+          raise "Unkown resource type"
+        end
+
       end
+    end
+    
+    def source(name)
+      api.spec("resourceTypes") && api.spec("resourceTypes").as(Hash)[name]?
+    end
+    
+    def api
+      @resource.api
     end
          
   end
@@ -121,23 +156,23 @@ module RAML
   class Resource
     include CommonMethods
 
-    getter :requests, :api, :uri, :spec, :resource_type_spec
+    getter :requests, :api, :uri, :spec
     
     def initialize(@api : Api, @uri : String, @spec : YAML::Type)
-      @resource_type_spec = TypeSpec.new(@spec)
       @requests = Array(Request).new
-      @spec.as(Hash).deep_merge!(resource_type)
+      @resource_type = ResourceType.new(self, @spec)
+      @spec.as(Hash).deep_merge!(resource_type.spec)
       @spec.as(Hash).each do |key, spec|
         @requests << Request.new(self, key.to_s, spec.as(Hash)) if Request::VERBS.includes?(key.to_s.downcase)
       end
     end
-    
-    def resource_type
-      api.spec("resourceTypes").as(Hash)[@resource_type_spec._type]? if api.spec("resourceTypes")
-    end
-    
+            
     def endpoint?
       @requests.any?
+    end
+    
+    def resource_type : ResourceType
+      @resource_type.as(ResourceType)
     end
 
   end
@@ -147,16 +182,17 @@ module RAML
 
     VERBS = %w{ get post put patch delete options head }
 
-    getter :verb, :resource, :request, :responses, :uri_parameters, :headers, :query_string
+    getter :verb, :resource, :request, :responses, :uri_parameters, :headers, :query_string, :body, :headers
     
     def initialize(@resource : Resource, @verb : String, @spec : Hash(YAML::Type, YAML::Type))
       @parameters = empty_hash.as(Hash(YAML::Type, YAML::Type))
       @uri_parameters = empty_hash.as(Hash(YAML::Type, YAML::Type))
-      @headers = empty_hash.as(Hash(YAML::Type, YAML::Type))
+      @responses = Array(Response).new
+      @body = Body.new(@resource, spec("body"))
+      @headers = Headers.new(@resource, spec("headers"))
       merge_traits(@resource.spec)
       merge_traits(@spec)
       parse_uri_parameters
-      @responses = Array(Response).new
       if resp = spec("responses")
         resp.as(Hash).each do |code, spec|
           @responses << Response.new(self, code.to_s, spec as Hash)
@@ -164,6 +200,7 @@ module RAML
       end
       parse_query_string
     end
+        
     
     def merge_traits(source_spec)
       if traits = hash!(source_spec)["is"]?
@@ -225,7 +262,7 @@ module RAML
     end
     
     def parameters
-      @resource.resource_type_spec.parameters.merge @parameters
+      @resource.resource_type.parameters.merge @parameters
     end
       
   end
@@ -233,25 +270,15 @@ module RAML
   class Response
     include CommonMethods
 
-    getter :code, :media_types, :request, :spec
+    getter :code, :request, :spec, :body, :headers
     
     def initialize(@request : Request, @code : String, @spec : Hash(YAML::Type, YAML::Type))
-      @media_types = Hash(String, MediaType).new
-      add_media_types(@spec)
-    end
+      @body = Body.new(@request.resource, spec("body"))
+      @headers = Headers.new(@request.resource, spec("headers"))
 
-    def add_media_types(@spec)
-      case @spec["body"]?
-      when String
-        api.default_media_types.each do |media_type|
-          @media_types[media_type.to_s] = MediaType.new self, media_type.to_s, @spec["body"]
-        end
-      when Hash
-        @spec["body"].as(Hash).each do |media_type, spec|
-          @media_types[media_type.to_s] = MediaType.new self, media_type.to_s, spec
-        end
-      end
     end
+    
+
     
     def api
       @request.resource.api
@@ -263,42 +290,171 @@ module RAML
     
   end
   
-  class MediaType
+  class Body
     include CommonMethods
     
-    getter :media_type, :spec
+    getter :examples, :serializations, :data_type
     
-    def initialize(@response : Response, @media_type : String, @spec : YAML::Type)
+    def initialize(@resource : Resource, @spec : YAML::Type)
+      @serializations = Array(Serialization).new
+      @data_type = case @spec
+      when String
+        parse_data_type(@spec)
+      when Hash
+        if type_spec = @spec.as(Hash)["type"]?
+          parse_data_type(type_spec)
+        end
+      end.as(DataType|Nil)
+      add_serializations
     end
     
-    def data_type
-      @data_type ||= _data_type || @response._data_type || DataType.new("Unknown", empty_hash)
+    def parse_data_type(type_spec)
+      data_type = case type_spec
+      when String
+        api.data_type(interpolate_variables type_spec)
+      when Hash
+        data_type = api.data_type(interpolate_variables(type_spec.as(Hash).first_key.as(String))).as(DataType)
+        data_type.spec.deep_merge!(type_spec.as(Hash).first_value)
+        data_type
+      else
+        nil
+      end
+      data_type.as(DataType) if data_type
+    end
+            
+    def add_serializations
+      @serializations = Serialization.parse(@resource, @spec, @data_type)
     end
     
     def api
-      @response.request.resource.api
-    end
-    
-    def uri
-      @response.request.resource.uri
-    end
-    
-    def example(_spec = spec("example"))
-      case _spec
-      when String
-        parameter?(_spec) || _spec
-      when Hash
-        _spec
-      when Nil
-#        example @response.request.resource.resource_type_spec["example"]
-      end
+      @resource.api
     end
     
     def parameters
-      @response.request.resource.resource_type_spec.parameters
+      @resource.resource_type.parameters
+    end
+
+    
+  end
+  
+  class Headers
+    include CommonMethods
+    
+    getter :examples
+    
+    def initialize(@resource : Resource, @spec : YAML::Type)
+    end
+    
+    def parameters
+      @resource.resource_type.parameters
+    end
+
+    
+  end
+
+  
+  class Serialization
+    include CommonMethods
+    
+    def self.parse(resource, spec, data_type) : Array(self)
+      serializations = Array(self).new
+      case spec
+      when String
+        resource.api.default_serializations.each do |serialization|
+          serializations << Serialization.new resource, serialization.to_s, Hash(YAML::Type, YAML::Type).new, data_type
+        end
+      when Hash
+        if type = spec.as(Hash)["type"]?
+          resource.api.default_serializations.each do |serialization|
+            serializations << Serialization.new resource, serialization.to_s, spec.as(Hash), nil
+          end
+        else
+          spec.as(Hash).each do |serialization, _spec|
+            serializations << Serialization.new resource, serialization.to_s, _spec.as(Hash), data_type
+          end
+        end
+      end
+      serializations
+    end
+
+    
+    getter :data_type, :resource, :format, :examples
+    
+    def initialize(@resource : Resource, @format : String, @spec : Hash(YAML::Type, YAML::Type), data_type : DataType|Nil)
+      @examples = Example.parse(@spec)
+      @data_type = DataType.new "Unknown", empty_hash
+      if data_type
+        @data_type = data_type.as(DataType)
+      end
+      parse_data_type
+      @examples.concat Example.parse(@data_type.spec) if @data_type
+    end
+    
+    def parse_data_type
+      data_type = case @spec
+      when String
+        api.data_type(interpolate_variables @spec.as(String))
+      when Hash
+        if spec = @spec.as(Hash)["type"]?
+          api.data_type(interpolate_variables spec.as(String))
+        end
+      end
+      if data_type
+        @data_type = data_type.as(DataType)
+      end
+    end
+    
+    def api
+      @resource.api
+    end
+    
+    def uri
+      @resource.uri
+    end
+        
+    def parameters
+      @resource.resource_type.parameters
     end
 
 
+  end
+  
+  class Example
+    include CommonMethods
+    
+    def self.parse(spec) : Array(self)
+      examples = Array(self).new
+      case spec        
+      when Hash
+        if example = spec.as(Hash)["examples"]?
+          example.as(Hash).each do |name, spec|
+            examples << Example.new(spec.as(Hash))
+          end
+        end
+        if example = spec.as(Hash)["example"]?
+          examples << Example.new(example.as(Hash))
+        end
+      end
+      examples
+    end
+
+    getter :value
+    
+    def initialize(@spec : YAML::Type)
+      value = @spec.as(Hash)["value"]? || @spec
+      @value = case value
+      when String
+        parameter?(value).to_s || value.to_s
+      when Array
+        value.to_pretty_json
+      when Hash
+        value.to_pretty_json
+      else
+        ""
+      end.as(String)
+    end
+    
+    
   end
     
   class DataType
@@ -335,9 +491,10 @@ module RAML
   class QueryString
     include CommonMethods
     
-    getter :property_sets
+    getter :property_sets, :examples
         
     def initialize(@request : Request, @spec : Hash(YAML::Type, YAML::Type) )
+      @examples = Example.parse(@spec)
       @property_sets = Array((Hash(YAML::Type, YAML::Type))).new
       if type_spec = hash!(@spec)["type"]?
         case type_spec
@@ -388,7 +545,6 @@ module RAML
       type_sets
     end
     
-    
     def merge_data_types(type_spec)
       type_sets = parse_type_spec(type_spec)
       type_sets.each do |type_set|
@@ -402,23 +558,6 @@ module RAML
       end
     end
     
-    def examples
-      examples = Array(String).new
-      if spec = @spec["examples"]?
-        hash!(spec).each do |name, example|
-          params = Array(String).new
-          hash!(example.as(Hash)["content"]).each do |key, value|
-            params << "#{key}=#{value}"
-          end
-          str = params.join("&")
-          if example.as(Hash)["strict"]?
-            str += " strict: #{example.as(Hash)["strict"]}"
-          end
-          examples << str
-        end
-      end
-      examples
-    end
 
   end
 end

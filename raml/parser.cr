@@ -8,7 +8,7 @@ module RAML
     
   class Parser
     
-    getter :api
+    getter :api, :source_files
   
     def initialize(path)
       @api = RAML::Api.new
@@ -27,7 +27,15 @@ module RAML
     def load_includes(spec, dir)
       case spec
       when String
-        spec.to_s.match(/.raml$/) ? YAML.parse(File.read(File.join(dir, spec.to_s))).raw : spec
+        if spec.to_s.match(/.raml$/)
+          path = File.join(dir, spec.to_s)
+          if File.exists?(path)
+            @api.source_files << File.expand_path(path)
+            YAML.parse(File.read(path)).raw
+          end
+        else
+          spec
+        end
       when Hash
         spec.as(Hash).each do |k, v|
           spec[k.as(YAML::Type)] = load_includes(v, dir)
@@ -69,6 +77,7 @@ module RAML
     
     def load_file(path, namespace = "")
       if File.exists?(path)
+        @api.source_files << path
         dir = File.dirname path
         spec = YAML.parse(File.read(path))
         load_libraries(spec, dir)

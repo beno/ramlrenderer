@@ -38,14 +38,16 @@ cli = Commander::Command.new do |cmd|
       next
     end
     
-    output = arguments.first? && "" || options.string["output"]
+    path = arguments.first? && "" || options.string["output"]
     parser = RAML::Parser.new(input)
     renderer = RAML::Renderer.new(parser.api)
-    if output == ""
-      puts renderer.render
+    if path == ""
+      html = renderer.render_docs
+      html = options.string["bundle"] == "true" ? renderer.bundle_dependencies(html) : html
+      puts html
     else
-      options.string["bundle"] == "true" ? renderer.bundle(output) : renderer.write(output)
-      puts "HTML written to #{output}"
+      options.string["bundle"] == "true" ? renderer.bundle(path) : renderer.write(path)
+      puts "HTML written to #{path}"
     end
   end
 end

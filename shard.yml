@@ -13,5 +13,5 @@ dependencies:
     github: jeromegn/kilt
   minitest:
     github: ysbaddaden/minitest.cr
-
-
+  zip-crystal:
+    github: pablotron/zip-crystal

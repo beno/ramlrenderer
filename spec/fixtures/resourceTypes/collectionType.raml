@@ -9,4 +9,5 @@ get:
       body:
         application/json:
           type: <<resourcePathName | !singularize | !uppercamelcase >>
-          example: <<exampleCollection>>
+          example:
+            value: <<exampleCollection>>

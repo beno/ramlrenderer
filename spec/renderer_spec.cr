@@ -7,20 +7,30 @@ class RendererTest < Minitest::Test
     @renderer = RAML::Renderer.new(load_parser.api)
     @dir = File.expand_path "../site/", __FILE__
   end
+  
+  def renderer
+    @renderer.as(RAML::Renderer)
+  end
 
   def test_write_files
-    (@renderer as RAML::Renderer).write File.join(@dir as String, "myapi.html")
+    renderer.write File.join(@dir as String, "myapi.html")
     %w{ myapi.html api.js api.css }.each do |f|
       assert File.exists?(File.join(@dir as String, f))
     end
   end
   
   def test_bundle_file
-    (@renderer as RAML::Renderer).bundle File.join(@dir as String, "bundle.html")
+    renderer.bundle File.join(@dir as String, "bundle.html")
     %w{ bundle.html }.each do |f|
       assert File.exists?(File.join(@dir as String, f))
     end
-
+  end
+  
+  def test_coffeescript_export
+    renderer.write_fixtures File.join(@dir as String, "fixtures.coffee")
+    %w{ fixtures.coffee }.each do |f|
+      assert File.exists?(File.join(@dir as String, f))
+    end
   end
   
   def teardown

@@ -1,3 +1,15 @@
+class String
+  
+  def singularize
+    self.sub(/(.*)ies$/, "\\1y").sub(/(.*)s$/, "\\1")
+  end
+
+  def pluralize
+    self.singularize.sub(/(.*[^y])$/, "\\1s").sub(/(.*)y$/, "\\1ies")
+  end
+    
+end
+
 class Hash
   
   def deep_merge(source)
@@ -40,8 +52,7 @@ module RAML
   alias TreeType = String | Resource | Hash(String, TreeType)
 
   
-  module CommonMethods
-    
+  module Utils
     def empty_hash : Hash(YAML::Type, YAML::Type)
       Hash(YAML::Type, YAML::Type).new
     end
@@ -60,22 +71,12 @@ module RAML
       array.as(Array)
     end
 
+  end
+  
+  module CommonMethods
     
-    def interpolate_directives(string : String)
-      return string unless @spec.is_a? Hash
-      string.scan(/\{([^\}]*)\}/).each do |match|
-        if val = directive?(match[1])
-          string = string.sub match[0], val
-        end
-      end
-      string
-    end
-    
-    def directive?(name, spec = @spec)
-      return spec unless @spec.is_a? Hash
-      spec.as(Hash)[name]?
-    end
-        
+    include Utils
+                
     def uri
       ""
     end
@@ -89,7 +90,8 @@ module RAML
       when "resourcePath"
         uri
       when "resourcePathName"
-        uri.split("/").last
+        parts = uri.split("/").reverse
+        parts.find {|part| !part.match(/\{.*\}/) }
       else
         parameters[name]?
       end
@@ -109,9 +111,9 @@ module RAML
       parts.each do |operation|
         variable = case operation
         when "!singularize"
-          variable.sub /(.*)s/, "\\1"
+          variable.singularize
         when "!pluralize"
-          variable.sub /(.*)s?/, "\\1s"
+          variable.pluralize
         when "!uppercase"
           variable.upcase
         when "!lowercase"	
@@ -155,6 +157,10 @@ module RAML
     def [](name)
       spec(name)
     end
+    
+    def spec
+      @spec
+    end
         
     def spec(name)
       return name unless @spec.is_a? Hash
@@ -168,23 +174,29 @@ module RAML
       end
     end
     
-    def _data_type
+    def x_data_type
       api.data_type(_type)
     end
         
-    def _type(spec = @spec)
+    def _type(spec = @spec, level=0)
       case spec
       when String
-        interpolate_variables spec
+        interpolate_variables(spec)
       when Hash
-        if data_type = spec.as(Hash)["type"]?
-          _type(data_type)
-        else
+        if type = spec.as(Hash)["type"]?
+          _type(type, level+1)
+        elsif level > 0
           _type(spec.as(Hash).first_key)
+        else
+          ""
         end
+      else
+        ""
       end
     end
     
+    
+
   end
 
 end

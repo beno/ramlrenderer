@@ -50,6 +50,14 @@ class RequestTest < Minitest::Test
     assert_equal "integer", request.uri_parameters["authorId"].as(Hash)["type"]
   end
 
+  def test_request_body
+    resource = resource("/authors/{authorId}")
+    request = resource.requests.first
+    assert request.uri_parameters.has_key? "authorId"
+    assert request.uri_parameters["authorId"].as(Hash).has_key? "type"
+    assert_equal "integer", request.uri_parameters["authorId"].as(Hash)["type"]
+  end
+
 
 
 end

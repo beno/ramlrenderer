@@ -1,0 +1,34 @@
+#%RAML 1.0
+title: Example API
+version: v1
+
+types:
+  ResourceId:
+    properties:
+      id: string
+  Book:
+    properties:
+      author: ResourceId
+      title: string
+
+resourceTypes:
+  member:
+    put:
+      body:
+        type: <<typename>>
+      responses:
+        200:
+          body:
+            type: <<typename>>
+
+/books:
+  /{id}:
+    type:
+      member:
+        typename: Book
+
+/xml_books:
+  /{id}:
+    type:
+      member:
+        typename: Book

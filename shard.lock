@@ -16,3 +16,7 @@ shards:
     github: jeromegn/slang
     commit: 53f569bc27893334ec3a3e4a75d1a6ed9a1ff711
 
+  zip-crystal:
+    github: pablotron/zip-crystal
+    version: 0.1.0
+

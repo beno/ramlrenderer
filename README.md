@@ -15,8 +15,8 @@
 
     $ ./ramlrenderer -i api.raml -o docs.html   #with flags
     $ ./ramlrenderer api.raml > docs.html       #alternative
-    
-### Development
+        
+#### Develop
 
     $ crystal ramlrenderer.cr -- -i api.raml -o docs.html
     
